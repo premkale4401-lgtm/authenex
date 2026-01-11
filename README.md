@@ -1,11 +1,14 @@
 <div align="left">
 🚀 Authenex (TrustLens) – AI‑Powered Digital Trust Platform
 Authenex is an AI‑powered digital authenticity and deepfake detection platform designed to verify whether images, videos, audio, and documents are real, AI‑generated, or manipulated.
+ 
 It provides advanced integrity metrics, explainable AI results, secure verification history, and real Google authentication, all wrapped in a futuristic dashboard experience.
+
 
 🧠 Problem Statement
 With the rapid rise of AI‑generated content and deepfakes, it has become increasingly difficult to trust digital media.
 Fake images, videos, audio clips, and documents can spread misinformation, fraud, and identity abuse.
+
 
 👉 Authenex solves this problem by proving authenticity instead of assuming trust.
 
