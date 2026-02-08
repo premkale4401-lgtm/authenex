@@ -2,6 +2,12 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+import path from 'path';
+import dotenv from 'dotenv';
+
+// Ensure env vars are loaded for server-side execution
+dotenv.config({ path: path.resolve(process.cwd(), '../env/.env') });
+
 export const authOptions: NextAuthOptions = {
   providers: [
     // Google OAuth
@@ -63,7 +69,35 @@ export const authOptions: NextAuthOptions = {
     
     async signIn({ user, account, profile }) {
       console.log("Sign In Callback:", { user, account, profile });
-      return true;
+      
+      try {
+        if (user) {
+           // Sync with backend
+           const userData = {
+             uid: user.id,
+             email: user.email,
+             displayName: user.name,
+             photoURL: user.image
+           };
+           
+           try {
+             const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+             await fetch(`${backendUrl}/auth/login`, {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify(userData)
+             });
+             console.log("✅ User synced with backend");
+           } catch (err) {
+             console.error("❌ Failed to sync user with backend:", err);
+             // Don't block login if backend sync fails, but log it
+           }
+        }
+        return true;
+      } catch (error) {
+        console.error("Sign in error:", error);
+        return true; 
+      }
     }
   },
   

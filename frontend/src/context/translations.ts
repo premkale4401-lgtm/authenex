@@ -9,7 +9,8 @@ export const translations = {
       settings: "Settings",
       help: "Help & Support",
       logout: "Sign Out",
-      profile: "Profile"
+      profile: "Profile",
+      legal: "Legal Safeguards"
     },
     header: {
       searchPlaceholder: "Search cases, analyses...",
@@ -403,7 +404,8 @@ export const translations = {
       settings: "सेटिंग्स",
       help: "सहायता",
       logout: "साइन आउट",
-      profile: "प्रोफ़ाइल"
+      profile: "प्रोफ़ाइल",
+      legal: "कानूनी सुरक्षा"
     },
     header: {
       searchPlaceholder: "मामले, विश्लेषण खोजें...",
@@ -798,7 +800,8 @@ export const translations = {
       settings: "सेटिंग्ज",
       help: "मदत",
       logout: "बाहेर पडणे",
-      profile: "प्रोफाइल"
+      profile: "प्रोफाइल",
+      legal: "कायदेशीर सुरक्षा"
     },
     header: {
       searchPlaceholder: "प्रकरणे शोधा...",

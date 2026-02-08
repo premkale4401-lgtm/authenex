@@ -1,8 +1,8 @@
 "use client";
 
-import { signIn, getProviders } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useAuthContext } from "@/context/AuthContext";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+
 import { motion } from "framer-motion";
 import { Shield, Mail, Lock, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -11,23 +11,8 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export default function SignIn() {
   const { t } = useLanguage();
-  const [providers, setProviders] = useState<any>(null);
-  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const fetchProviders = async () => {
-      try {
-        const res = await getProviders();
-        console.log("Available providers:", res);
-        setProviders(res);
-      } catch (err) {
-        console.error("Failed to fetch providers:", err);
-      }
-    };
-    fetchProviders();
-  }, []);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -43,24 +28,6 @@ export default function SignIn() {
       setError("Failed to connect to Google");
       setIsLoading(false);
     }
-  };
-
-  const { loginAsGuest } = useAuthContext();
-  const router = typeof window !== 'undefined' ? require("next/navigation").useRouter() : null;
-
-  const handleGuestSignIn = async () => {
-    setIsLoading(true);
-    await loginAsGuest();
-    // Small delay to allow state update
-    setTimeout(() => {
-        router.push("/dashboard");
-    }, 500);
-  };
-
-  const handleTestSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Test sign in is now just an alias for guest for this demo
-    await handleGuestSignIn();
   };
 
   return (
@@ -137,69 +104,7 @@ export default function SignIn() {
             )}
           </button>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-slate-900/60 text-slate-500">{t("auth.continueEmail")}</span>
-            </div>
-          </div>
 
-          <button
-            onClick={handleGuestSignIn}
-            disabled={isLoading}
-            className="w-full mb-6 flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20"
-          >
-            <Shield className="w-5 h-5" />
-            <span>{t("auth.continueGuest")}</span>
-          </button>
-
-
-          {/* Test Login Form */}
-          <form onSubmit={handleTestSignIn} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">{t("auth.emailLabel")}</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="test@authenex.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
-                />
-              </div>
-              <p className="mt-1 text-xs text-slate-500">Use test@authenex.com for demo</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">{t("auth.passwordLabel")}</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input
-                  type="password"
-                  placeholder="any password works"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  {t("auth.signInButton")}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
 
           {/* Security Badge */}
           <div className="mt-6 pt-6 border-t border-slate-800">

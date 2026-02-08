@@ -15,7 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Newspaper
+  Newspaper,
+  Scale,
+  User
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -24,9 +26,11 @@ const navItems = [
   { name: "nav.newAnalysis", href: "/dashboard/analyze", icon: Scan },
   { name: "nav.myCases", href: "/dashboard/cases", icon: FolderKanban },
   { name: "nav.analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "nav.legal", href: "/dashboard/legal", icon: Scale },
 ];
 
 const bottomItems = [
+  { name: "nav.profile", href: "/dashboard/profile", icon: User },
   { name: "nav.settings", href: "/dashboard/settings", icon: Settings },
   { name: "nav.help", href: "/dashboard/help", icon: HelpCircle },
 ];

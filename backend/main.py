@@ -16,7 +16,9 @@ from dotenv import load_dotenv
 import database  # Local database module
 
 # Load environment variables
-load_dotenv()
+from pathlib import Path
+env_path = Path(__file__).parent.parent / 'env' / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Initialize FastAPI
 app = FastAPI(title="Authenex AI Analysis API", version="1.0.0")
