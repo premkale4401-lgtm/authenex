@@ -42,6 +42,8 @@ import { useRouter } from "next/navigation";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { useAnalysis } from "@/context/AnalysisContext";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 
 
 const CircularProgress = ({ value, color, size = 140, strokeWidth = 10, label }: { 
@@ -215,6 +217,7 @@ const SignalCard = ({ signal, index }: {
 };
 
 export default function AnalysisResultPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("technical"); // Default to technical
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
@@ -222,9 +225,9 @@ export default function AnalysisResultPage() {
   const router = useRouter();
   
   const tabs = [
-    { id: "technical", label: "Analysis Details", icon: Cpu },
-    { id: "visualization", label: "Visual Evidence", icon: Eye },
-    { id: "report", label: "Forensic Report", icon: FileText },
+    { id: "technical", label: t("analyze.report.tabs.details"), icon: Cpu },
+    { id: "visualization", label: t("analyze.report.tabs.visual"), icon: Eye },
+    { id: "report", label: t("analyze.report.tabs.report"), icon: FileText },
   ];
 
   const handleDownload = async (format: 'pdf' | 'json' | 'csv') => {
@@ -288,14 +291,14 @@ export default function AnalysisResultPage() {
       <div className="min-h-screen pb-20 lg:pb-0 relative overflow-hidden bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Shield className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-400 mb-2">No Analysis Data</h2>
-          <p className="text-slate-500 mb-6">Upload a file to begin analysis</p>
+          <h2 className="text-xl font-semibold text-slate-400 mb-2">{t("analyze.report.error.title")}</h2>
+          <p className="text-slate-500 mb-6">{t("analyze.report.error.desc")}</p>
           <Link
             href="/dashboard/analyze"
             className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-all"
           >
             <Scan className="w-4 h-4" />
-            Start Analysis
+            {t("analyze.report.error.action")}
           </Link>
         </div>
       </div>
@@ -368,13 +371,15 @@ export default function AnalysisResultPage() {
                   <Shield className="w-5 h-5 text-white" />
                 </motion.div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">Analysis Complete</h1>
-                  <p className="text-slate-400 text-sm">ID: {analysisResult.id}</p>
+                  <h1 className="text-2xl font-bold text-white">{t("dashboard.recentAnalysis.status.completed")}</h1>
+                  <p className="text-slate-400 text-sm">{t("analyze.report.id")}: {analysisResult.id}</p>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
+
+              
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -388,7 +393,7 @@ export default function AnalysisResultPage() {
                   <Download className="w-4 h-4" />
                 )}
 
-                Download Report
+                {t("dashboard.recentAnalysis.actions.download")}
               </motion.button>
               
               <motion.button
@@ -397,7 +402,7 @@ export default function AnalysisResultPage() {
                 className="px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-300 text-sm font-medium flex items-center gap-2 transition-all"
               >
                 <Share2 className="w-4 h-4" />
-                Share
+                {t("dashboard.recentAnalysis.actions.share")}
               </motion.button>
               
               <Link
@@ -405,7 +410,7 @@ export default function AnalysisResultPage() {
                 className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-lg shadow-cyan-500/25"
               >
                 <RefreshCw className="w-4 h-4" />
-                New Analysis
+                {t("nav.newAnalysis")}
               </Link>
             </div>
           </div>
@@ -431,7 +436,7 @@ export default function AnalysisResultPage() {
                   ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
                   : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
               }`}>
-                {analysisResult.riskLevel} Risk
+                {analysisResult.riskLevel} {t("analyze.report.risk")}
               </div>
             </div>
           </div>
@@ -452,7 +457,7 @@ export default function AnalysisResultPage() {
               
               <div className="relative z-10">
                 <div className="text-center mb-4">
-                  <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Authenticity Assessment</h3>
+                  <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">{t("analyze.report.authenticityAssessment")}</h3>
                 </div>
                 
                 {/* Vertical Progress Rings */}
@@ -467,8 +472,8 @@ export default function AnalysisResultPage() {
                       label=""
                     />
                     <div className="mt-4 text-center">
-                      <p className="text-rose-400 text-sm font-bold uppercase tracking-wider">AI Generated</p>
-                      <p className="text-slate-500 text-xs mt-1">Probability</p>
+                      <p className="text-rose-400 text-sm font-bold uppercase tracking-wider">{t("analyze.results.aiGenerated")}</p>
+                      <p className="text-slate-500 text-xs mt-1">{t("analyze.report.probability")}</p>
                     </div>
                   </div>
                   
@@ -490,8 +495,8 @@ export default function AnalysisResultPage() {
                       label=""
                     />
                     <div className="mt-4 text-center">
-                      <p className="text-emerald-400 text-sm font-bold uppercase tracking-wider">Human</p>
-                      <p className="text-slate-500 text-xs mt-1">Authenticity</p>
+                      <p className="text-emerald-400 text-sm font-bold uppercase tracking-wider">{t("analyze.report.human")}</p>
+                      <p className="text-slate-500 text-xs mt-1">{t("analyze.report.authenticity")}</p>
                     </div>
                   </div>
                 </div>
@@ -499,7 +504,7 @@ export default function AnalysisResultPage() {
                 {/* Confidence - Moved Up */}
                 <div className="mt-2 mb-6 max-w-xs mx-auto">
                     <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                       <span>Confidence Score</span>
+                       <span>{t("analyze.report.confidenceScore")}</span>
                        <span className="text-white font-mono font-bold">{analysisResult.overallScore.confidence}%</span>
                     </div>
                     <div className="h-2 bg-slate-800/50 rounded-full overflow-hidden border border-slate-700/30">
@@ -526,7 +531,7 @@ export default function AnalysisResultPage() {
                       <h4 className={`font-semibold mb-1 text-sm ${
                         analysisResult.riskLevel === 'high' ? 'text-rose-400' : 'text-emerald-400'
                       }`}>
-                        {analysisResult.overallScore.aiProbability > 50 ? "Synthetic Content Detected" : "Content Likely Authentic"}
+                        {analysisResult.overallScore.aiProbability > 50 ? t("analyze.report.syntheticDetected") : t("analyze.report.likelyAuthentic")}
                       </h4>
 
 
@@ -582,13 +587,13 @@ export default function AnalysisResultPage() {
                          <div>
                            <h3 className="text-white font-bold text- flex items-center gap-2">
                              <Layers className="w-5 h-5 text-cyan-400" />
-                             Multi-Layer Detection Analysis
+                             {t("analyze.report.multiLayerAnalysis")}
                            </h3>
-                           <p className="text-slate-400 text-sm mt-1">{analysisResult.detectionLayers.length} layers analyzed with weighted scoring</p>
+                           <p className="text-slate-400 text-sm mt-1">{analysisResult.detectionLayers.length} {t("analyze.report.layersAnalyzed")}</p>
                          </div>
                          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg px-4 py-2 text-center">
                            <span className="text-cyan-400 font-mono text-2xl font-bold">{analysisResult.overallScore.confidence.toFixed(1)}%</span>
-                           <p className="text-cyan-300 text-xs mt-0.5">Overall Confidence</p>
+                           <p className="text-cyan-300 text-xs mt-0.5">{t("analyze.report.overallConfidence")}</p>
                          </div>
                        </div>
                        
@@ -596,7 +601,7 @@ export default function AnalysisResultPage() {
                        <div className="mt-5">
                          <h4 className="text-slate-300 font-semibold mb-3 text-sm flex items-center gap-2">
                            <Activity className="w-4 h-4 text-cyan-400" />
-                           Layer Contribution Analysis (Score × Weight)
+                           {t("analyze.report.layerContribution")}
                          </h4>
                          <div className="space-y-2.5">
                            {analysisResult.detectionLayers.map((layer: any, idx: number) => {
@@ -637,8 +642,8 @@ export default function AnalysisResultPage() {
                    {analysisResult.detectionLayers && analysisResult.detectionLayers.length === 0 && (
                      <div className="bg-slate-900/30 border border-dashed border-slate-700 rounded-xl p-12 text-center">
                        <Layers className="w-16 h-16 text-slate-700 mx-auto mb-4 opacity-50" />
-                       <p className="text-slate-400 font-medium mb-1">No Detection Layers Available</p>
-                       <p className="text-slate-600 text-sm">The AI analysis did not return detailed layer data</p>
+                       <p className="text-slate-400 font-medium mb-1">{t("analyze.report.noLayers")}</p>
+                       <p className="text-slate-600 text-sm">{t("analyze.report.noLayersDesc")}</p>
                      </div>
                    )}
 
@@ -647,7 +652,7 @@ export default function AnalysisResultPage() {
                       <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 mt-6">
                        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
                          <Scan className="w-5 h-5 text-cyan-400" />
-                         Category-wise Distribution
+                         {t("analyze.report.categoryDistribution")}
                        </h3>
                        <div className="h-72">
                          <ResponsiveContainer width="100%" height="100%">
@@ -693,7 +698,7 @@ export default function AnalysisResultPage() {
                   <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
                     <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
                       <Scan className="w-5 h-5 text-cyan-400" />
-                      Detection Findings
+                      {t("analyze.report.detectionFindings")}
                     </h3>
                     <div className="space-y-3">
                       {analysisResult.detectionLayers.map((layer: any, idx: number) => (
@@ -713,7 +718,7 @@ export default function AnalysisResultPage() {
                           <div className="flex-1">
                             <h4 className="text-slate-200 font-medium mb-1">{layer.name}</h4>
                             <ul className="space-y-1">
-                              {layer.details.map((detail: string, detailIdx: number) => (
+                              {(layer.details || []).map((detail: string, detailIdx: number) => (
                                 <li key={detailIdx} className="text-slate-400 text-sm flex items-start gap-2">
                                   <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
                                   {detail}
@@ -737,7 +742,7 @@ export default function AnalysisResultPage() {
                   {/* Heatmap if available */}
                   {analysisResult.heatmapData && (
                     <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-                      <h3 className="text-white font-semibold mb-4 text-sm">Heatmap Analysis</h3>
+                      <h3 className="text-white font-semibold mb-4 text-sm">{t("analyze.report.heatmap")}</h3>
                       <HeatmapOverlay result={analysisResult} />
                     </div>
                   )}
@@ -745,7 +750,7 @@ export default function AnalysisResultPage() {
                   {/* Temporal Data if available */}
                   {analysisResult.temporalData && (
                     <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-                      <h3 className="text-white font-semibold mb-4 text-sm">Temporal Consistency</h3>
+                      <h3 className="text-white font-semibold mb-4 text-sm">{t("analyze.report.temporal")}</h3>
                       <WaveformVisualizer data={analysisResult.temporalData} />
                     </div>
                   )}
@@ -763,16 +768,16 @@ export default function AnalysisResultPage() {
                   {/* Report Content */}
                   <div className="border-b border-slate-800 pb-6 mb-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white">Forensic Analysis Report</h3>
+                      <h3 className="text-xl font-bold text-white">{t("analyze.report.forensicReport")}</h3>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-slate-500">Examiner:</span>
+                        <span className="text-slate-500">{t("analyze.report.examiner")}:</span>
                         <span className="text-slate-300 ml-2">{analysisResult.forensicReport.examiner}</span>
                       </div>
                       <div>
-                        <span className="text-slate-500">Date:</span>
+                        <span className="text-slate-500">{t("analyze.report.date")}:</span>
                         <span className="text-slate-300 ml-2">{new Date(analysisResult.timestamp).toLocaleString()}</span>
                       </div>
                     </div>
@@ -782,7 +787,7 @@ export default function AnalysisResultPage() {
                     <div>
                       <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
                         <Fingerprint className="w-4 h-4 text-cyan-400" />
-                        Conclusion
+                        {t("analyze.report.conclusion")}
                       </h4>
                       <p className="text-slate-400 leading-relaxed">
                         {analysisResult.forensicReport.conclusion}
@@ -792,7 +797,7 @@ export default function AnalysisResultPage() {
                     <div>
                       <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        Recommendations
+                        {t("analyze.report.recommendations")}
                       </h4>
                       <ul className="space-y-2">
                         {analysisResult.forensicReport.recommendations.map((rec: string, idx: number) => (

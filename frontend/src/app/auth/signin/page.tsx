@@ -6,8 +6,11 @@ import { useAuthContext } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { Shield, Mail, Lock, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import LanguageSelector from "@/components/common/LanguageSelector";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function SignIn() {
+  const { t } = useLanguage();
   const [providers, setProviders] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +72,10 @@ export default function SignIn() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
       </div>
 
+      <div className="absolute top-6 right-6 z-50">
+        <LanguageSelector />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -84,7 +91,7 @@ export default function SignIn() {
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Authenex</h1>
-              <p className="text-xs text-slate-500 tracking-widest uppercase">TrustLens</p>
+              <p className="text-xs text-slate-500 tracking-widest uppercase">{t("landing.nav.brandTagline")}</p>
             </div>
           </Link>
         </div>
@@ -104,8 +111,8 @@ export default function SignIn() {
         {/* Sign In Card */}
         <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl shadow-cyan-500/5">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-100 mb-2">Welcome Back</h2>
-            <p className="text-slate-400 text-sm">Sign in to access forensic analysis tools</p>
+            <h2 className="text-2xl font-bold text-slate-100 mb-2">{t("auth.welcomeBack")}</h2>
+            <p className="text-slate-400 text-sm">{t("auth.subtitle")}</p>
           </div>
 
           {/* Google Sign In */}
@@ -124,7 +131,7 @@ export default function SignIn() {
                   <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                   <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                <span>Continue with Google</span>
+                <span>{t("auth.continueGoogle")}</span>
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
               </>
             )}
@@ -135,7 +142,7 @@ export default function SignIn() {
               <div className="w-full border-t border-slate-800" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-slate-900/60 text-slate-500">Or continue with email</span>
+              <span className="px-2 bg-slate-900/60 text-slate-500">{t("auth.continueEmail")}</span>
             </div>
           </div>
 
@@ -145,14 +152,14 @@ export default function SignIn() {
             className="w-full mb-6 flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20"
           >
             <Shield className="w-5 h-5" />
-            <span>Continue as Guest (No Setup)</span>
+            <span>{t("auth.continueGuest")}</span>
           </button>
 
 
           {/* Test Login Form */}
           <form onSubmit={handleTestSignIn} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">{t("auth.emailLabel")}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
@@ -167,7 +174,7 @@ export default function SignIn() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Password</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">{t("auth.passwordLabel")}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
@@ -187,7 +194,7 @@ export default function SignIn() {
                 <div className="w-5 h-5 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  Sign In
+                  {t("auth.signInButton")}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -198,7 +205,7 @@ export default function SignIn() {
           <div className="mt-6 pt-6 border-t border-slate-800">
             <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
               <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Secured with 256-bit encryption</span>
+              <span>{t("auth.secured")}</span>
             </div>
           </div>
         </div>
@@ -206,7 +213,7 @@ export default function SignIn() {
         {/* Back to Home */}
         <p className="text-center mt-6 text-slate-500 text-sm">
           <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors">
-            ← Back to home
+            ← {t("auth.backHome")}
           </Link>
         </p>
       </motion.div>

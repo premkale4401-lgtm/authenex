@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import sizeOf from 'image-size';
 import { AnalysisResult, ReportConfig } from '@/types/report';
 
 export async function generatePDFBuffer(
@@ -57,35 +58,60 @@ export async function generatePDFBuffer(
         const boxWidth = colWidth - 4;
         const boxHeight = 36;
         
-        // Load image to get dimensions
-        const img = new Image();
-        img.src = imgUrl;
-        
-        // Calculate aspect ratio fit
-        let imgWidth = boxWidth;
-        let imgHeight = boxHeight;
-        
-        // If we can determine the actual image dimensions, maintain aspect ratio
-        // For now, assume common aspect ratios and fit within box
-        const aspectRatio = 16 / 9; // Default assumption
-        
-        if (boxWidth / boxHeight > aspectRatio) {
-          // Box is wider than image aspect ratio
-          imgWidth = boxHeight * aspectRatio;
-          imgHeight = boxHeight;
-        } else {
-          // Box is taller than image aspect ratio
-          imgWidth = boxWidth;
-          imgHeight = boxWidth / aspectRatio;
+        // Fetch image and convert to base64 (server-side compatible)
+        try {
+          // Fetch the image
+          const response = await fetch(imgUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+          }
+          
+          // Get image as buffer
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          
+          // Convert to base64 data URL
+          const base64 = buffer.toString('base64');
+          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+          const dataUrl = `data:${mimeType};base64,${base64}`;
+          
+          // Get actual image dimensions from buffer
+          let aspectRatio = 16 / 9; // Default fallback
+          try {
+            const dimensions = sizeOf(buffer);
+            if (dimensions.width && dimensions.height) {
+              aspectRatio = dimensions.width / dimensions.height;
+            }
+          } catch (dimError) {
+            console.warn('Could not extract image dimensions, using default aspect ratio:', dimError);
+          }
+          
+          let imgWidth = boxWidth;
+          let imgHeight = boxHeight;
+          
+          if (boxWidth / boxHeight > aspectRatio) {
+            // Box is wider than image aspect ratio
+            imgWidth = boxHeight * aspectRatio;
+            imgHeight = boxHeight;
+          } else {
+            // Box is taller than image aspect ratio
+            imgWidth = boxWidth;
+            imgHeight = boxWidth / aspectRatio;
+          }
+          
+          // Center the image in the box
+          const xOffset = leftX + 2 + (boxWidth - imgWidth) / 2;
+          const yOffset = currentY + 2 + (boxHeight - imgHeight) / 2;
+          
+          // Add image to PDF
+          doc.addImage(dataUrl, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+        } catch (fetchError) {
+          console.error('Failed to fetch image for PDF:', fetchError);
+          throw fetchError;
         }
-        
-        // Center the image in the box
-        const xOffset = leftX + 2 + (boxWidth - imgWidth) / 2;
-        const yOffset = currentY + 2 + (boxHeight - imgHeight) / 2;
-        
-        doc.addImage(imgUrl, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
       }
     } catch (error) {
+      console.error('Image loading error in PDF:', error);
       // Fallback to icon if image fails to load
       doc.setFontSize(30);
       doc.setTextColor(71, 85, 105);
@@ -188,6 +214,31 @@ export async function generatePDFBuffer(
     const previewLines = doc.splitTextToSize(preview, colWidth - 10);
     doc.text(previewLines, leftX + 5, currentY + 13);
   }
+
+  // Analysis Metadata Section - Moved to Left Column
+  currentY += 35; // Add spacing after previous section
+  doc.setFillColor(15, 23, 42);
+  doc.roundedRect(leftX, currentY, colWidth - 5, 30, 2, 2, 'F');
+  
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 116, 139);
+  doc.text('ANALYSIS METADATA', leftX + 3, currentY + 7);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(148, 163, 184);
+  
+  const metadata = [
+    `Scan Date: ${new Date(result.generatedAt).toLocaleDateString()}`,
+    `Analysis Method: Deep Learning + Forensic`,
+    `Confidence Level: ${result.confidence.score >= 90 ? 'Very High' : result.confidence.score >= 70 ? 'High' : 'Moderate'}`,
+    `Processing Time: ${result.analysis.duration}`
+  ];
+  
+  metadata.forEach((item, idx) => {
+    doc.text(item, leftX + 3, currentY + 14 + (idx * 5));
+  });
 
   let rightX = margin + colWidth + 5;
   currentY = 40;
@@ -293,30 +344,7 @@ export async function generatePDFBuffer(
     doc.text(stat.value, rightX + (idx * statWidth) + 3, currentY + 14);
   });
 
-  // Analysis Metadata Section
-  currentY += 25;
-  doc.setFillColor(15, 23, 42);
-  doc.roundedRect(rightX, currentY, colWidth - 5, 30, 2, 2, 'F');
-  
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(100, 116, 139);
-  doc.text('ANALYSIS METADATA', rightX + 3, currentY + 7);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6);
-  doc.setTextColor(148, 163, 184);
-  
-  const metadata = [
-    `Scan Date: ${new Date(result.generatedAt).toLocaleDateString()}`,
-    `Analysis Method: Deep Learning + Forensic`,
-    `Confidence Level: ${result.confidence.score >= 90 ? 'Very High' : result.confidence.score >= 70 ? 'High' : 'Moderate'}`,
-    `Processing Time: ${result.analysis.duration}`
-  ];
-  
-  metadata.forEach((item, idx) => {
-    doc.text(item, rightX + 3, currentY + 14 + (idx * 5));
-  });
+
 
   // Footer with updated disclaimer
   doc.setFontSize(6);

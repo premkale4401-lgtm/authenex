@@ -3,8 +3,11 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Shield } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function CTASection() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative py-24 lg:py-32 overflow-hidden">
       {/* Background glow */}
@@ -28,15 +31,14 @@ export default function CTASection() {
           </motion.div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-100 mb-6">
-            Ready to Defend{" "}
+            {t('landing.cta.title')}{" "}
             <span className="bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
-              Digital Truth?
+              {t('landing.cta.titleHighlight')}
             </span>
           </h2>
           
           <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-10">
-            Join over 150 enterprises and government agencies using Authenex 
-            to combat synthetic media and preserve information integrity.
+            {t('landing.cta.description')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -44,16 +46,16 @@ export default function CTASection() {
               onClick={() => signIn()}
               className="group px-8 py-4 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-xl shadow-sky-500/25 hover:shadow-sky-500/40 hover:-translate-y-0.5"
             >
-              Start Free Trial
+              {t('landing.cta.start')}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button className="px-8 py-4 rounded-full bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/30 text-slate-300 hover:text-sky-400 font-semibold transition-all">
-              Schedule Demo
+              {t('landing.cta.demo')}
             </button>
           </div>
 
           <p className="mt-6 text-sm text-slate-500">
-            No credit card required • 14-day free trial • SOC 2 compliant
+            {t('landing.cta.footer')}
           </p>
         </motion.div>
       </div>

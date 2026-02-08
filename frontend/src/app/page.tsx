@@ -17,7 +17,10 @@ import CTASection from "@/components/sections/CTASection";
 
 
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function Home() {
+  const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -68,17 +71,17 @@ export default function Home() {
                   <span className="text-white font-bold text-sm">A</span>
                 </div>
                 <div>
-                  <p className="font-bold text-slate-200">Authenex</p>
-                  <p className="text-xs text-slate-500">Defending digital truth since 2026</p>
+                  <p className="font-bold text-slate-200">{t("landing.nav.brand")}</p>
+                  <p className="text-xs text-slate-500">{t("landing.footer.tagline")}</p>
                 </div>
               </div>
               
               {/* Middle - Navigation Links */}
               <div className="flex gap-6 text-sm text-slate-500">
-                <a href="#" className="hover:text-sky-400 transition-colors">Privacy</a>
-                <a href="#" className="hover:text-sky-400 transition-colors">Terms</a>
-                <a href="#" className="hover:text-sky-400 transition-colors">Security</a>
-                <a href="#" className="hover:text-sky-400 transition-colors">API</a>
+                <a href="#" className="hover:text-sky-400 transition-colors">{t("landing.footer.links.privacy")}</a>
+                <a href="#" className="hover:text-sky-400 transition-colors">{t("landing.footer.links.terms")}</a>
+                <a href="#" className="hover:text-sky-400 transition-colors">{t("landing.footer.links.security")}</a>
+                <a href="#" className="hover:text-sky-400 transition-colors">{t("landing.footer.links.api")}</a>
               </div>
               
               {/* Right side - Social Media Links */}

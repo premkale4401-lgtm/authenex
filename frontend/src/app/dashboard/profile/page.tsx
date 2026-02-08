@@ -395,7 +395,7 @@ export default function ProfilePage() {
                   <Shield className="w-5 h-5 text-sky-400" />
                 </div>
                 <h4 className="text-2xl font-bold text-white mb-1">{userStats.plan}</h4>
-                <p className="text-slate-400 text-sm mb-6">{t('profile.plan.renews')} {new Date(userStats.planExpiry).toLocaleDateString()}</p>
+                <p className="text-slate-400 text-sm mb-6">{t('profile.plan.renews')} {new Date(userStats.planExpiry).toLocaleDateString('en-US')}</p>
                 
                 <div className="space-y-3 mb-6">
                   {["Unlimited analyses", "Priority processing", "API access", "Advanced reporting"].map((feature, i) => (
@@ -518,7 +518,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-amber-400/80 text-xs">Unlocked on {new Date(achievement.date!).toLocaleDateString()}</p>
+                      <p className="text-amber-400/80 text-xs">Unlocked on {new Date(achievement.date!).toLocaleDateString('en-US')}</p>
                     )}
                   </div>
                 </div>

@@ -1,101 +1,120 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Upload, Cpu, FileCheck } from "lucide-react";
-
-const steps = [
-  {
-    number: "01",
-    icon: Upload,
-    title: "Secure Ingestion",
-    description: "Drag and drop any digital asset. We support 200+ formats with automatic metadata preservation and cryptographic hashing for chain of custody.",
-    features: ["End-to-end encryption", "Metadata extraction", "Hash verification"]
-  },
-  {
-    number: "02",
-    icon: Cpu,
-    title: "Neural Analysis",
-    description: "Our ensemble of specialized AI models processes content through 50+ forensic checkpoints, detecting anomalies invisible to human eyes.",
-    features: ["50+ detection models", "Sub-second processing", "Confidence scoring"]
-  },
-  {
-    number: "03",
-    icon: FileCheck,
-    title: "Verified Report",
-    description: "Receive court-ready documentation with explainable AI insights, anomaly visualization, and reproducible evidence for legal proceedings.",
-    features: ["PDF export", "API integration", "Blockchain timestamp"]
-  }
-];
+import { Shield, Cpu, FileCheck, Lock, Unlock, Database, Eye, Zap, Activity, FileText, Code, Link } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ProcessSection() {
+  const { t } = useLanguage();
+
+  const steps = [
+    {
+      icon: Shield,
+      title: t('landing.process.step1.title'),
+      description: t('landing.process.step1.description'),
+      features: [
+        { icon: Lock, text: t('landing.process.step1.features.f1') },
+        { icon: Database, text: t('landing.process.step1.features.f2') },
+        { icon: Unlock, text: t('landing.process.step1.features.f3') }
+      ]
+    },
+    {
+      icon: Cpu,
+      title: t('landing.process.step2.title'),
+      description: t('landing.process.step2.description'),
+      features: [
+        { icon: Eye, text: t('landing.process.step2.features.f1') },
+        { icon: Zap, text: t('landing.process.step2.features.f2') },
+        { icon: Activity, text: t('landing.process.step2.features.f3') }
+      ]
+    },
+    {
+      icon: FileCheck,
+      title: t('landing.process.step3.title'),
+      description: t('landing.process.step3.description'),
+      features: [
+        { icon: FileText, text: t('landing.process.step3.features.f1') },
+        { icon: Code, text: t('landing.process.step3.features.f2') },
+        { icon: Link, text: t('landing.process.step3.features.f3') }
+      ]
+    }
+  ];
+
   return (
-    <section className="relative py-24 lg:py-32 bg-slate-950/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16 lg:mb-20"
-        >
-          <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-6">
-            How It Works
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-100 mb-4">
-            Forensic Pipeline in{" "}
-            <span className="text-emerald-400">Three Steps</span>
-          </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            From ingestion to verified report, our automated pipeline ensures 
-            accuracy, transparency, and legal admissibility.
-          </p>
-        </motion.div>
+    <section className="py-24 bg-black relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black" />
+      
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="text-center mb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-6"
+          >
+            <Activity className="w-4 h-4" />
+            {t('landing.process.badge')}
+          </motion.div>
+          
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-5xl font-bold mb-6"
+          >
+            {t('landing.process.title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">{t('landing.process.titleHighlight')}</span>
+          </motion.h2>
+          
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-xl text-gray-400 max-w-2xl mx-auto"
+          >
+            {t('landing.process.description')}
+          </motion.p>
+        </div>
 
-        <div className="relative">
-          {/* Connection line */}
-          <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sky-500/30 to-transparent" />
+        <div className="grid md:grid-cols-3 gap-8 relative">
+          {/* Connector Line */}
+          <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {steps.map((step, idx) => (
-              <motion.div
-                key={step.number}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.2 }}
-                className="relative"
-              >
-                <div className="glass-card p-8 h-full border-t-4 border-t-sky-500/50 hover:border-t-sky-400 transition-colors">
-                  {/* Step number */}
-                  <div className="absolute -top-4 left-8 px-3 py-1 bg-sky-500 text-white text-sm font-bold rounded">
-                    {step.number}
-                  </div>
+          {steps.map((step, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.2 }}
+              className="relative group"
+            >
+              {/* Step Number */}
+              <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-black border border-blue-500/30 flex items-center justify-center text-blue-400 font-mono text-sm z-10 group-hover:border-blue-500 transition-colors">
+                0{index + 1}
+              </div>
 
-                  {/* Icon */}
-                  <div className="w-16 h-16 rounded-2xl bg-sky-500/10 flex items-center justify-center mb-6 mt-2">
-                    <step.icon className="w-8 h-8 text-sky-400" />
-                  </div>
-
-                  <h3 className="text-2xl font-bold text-slate-200 mb-4">
-                    {step.title}
-                  </h3>
-                  <p className="text-slate-400 mb-6 leading-relaxed">
-                    {step.description}
-                  </p>
-
-                  {/* Features */}
-                  <ul className="space-y-2">
-                    {step.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm text-slate-500">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+              <div className="p-8 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-500/30 transition-colors h-full">
+                <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-6 text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                  <step.icon className="w-6 h-6" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
+
+                <h3 className="text-xl font-bold mb-4">{step.title}</h3>
+                <p className="text-gray-400 mb-8">{step.description}</p>
+
+                <ul className="space-y-3">
+                  {step.features.map((feature, fIndex) => (
+                    <li key={fIndex} className="flex items-center gap-3 text-sm text-gray-300">
+                      <feature.icon className="w-4 h-4 text-blue-400" />
+                      {feature.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

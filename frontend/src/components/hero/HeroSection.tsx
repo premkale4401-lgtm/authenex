@@ -12,9 +12,11 @@ import {
   Award
 } from "lucide-react";
 import { useSession, signIn } from "next-auth/react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function HeroSection() {
   const { data: session } = useSession();
+  const { t } = useLanguage();
 
   return (
     <section className="relative min-h-screen flex items-center pt-20">
@@ -38,20 +40,19 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
               </span>
-              Now with GPT-4 Detection
+              {t("landing.hero.badge")}
             </motion.div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] mb-6">
-              <span className="text-slate-100">Verify Truth in</span>
+              <span className="text-slate-100">{t("landing.hero.title1")}</span>
               <br />
               <span className="bg-gradient-to-r from-sky-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent pb-1">
-                Digital Reality
+                {t("landing.hero.title2")}
               </span>
             </h1>
 
             <p className="text-lg text-slate-400 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Authenex combines neural forensics, quantum-resistant verification, 
-              and explainable AI to detect synthetic media with 99.9% accuracy.
+              {t("landing.hero.description")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center lg:justify-start mb-10">
@@ -62,18 +63,18 @@ export default function HeroSection() {
                     className="group px-8 py-4 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-xl shadow-sky-500/20 hover:shadow-sky-500/40 hover:-translate-y-0.5"
                   >
                     <Zap className="w-5 h-5" />
-                    Start Free Analysis
+                    {t("landing.hero.startAnalysis")}
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                   <button className="group px-8 py-4 rounded-full bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/30 text-slate-300 hover:text-sky-400 font-semibold transition-all flex items-center justify-center gap-2">
                     <Play className="w-5 h-5" />
-                    Watch Demo
+                    {t("landing.hero.watchDemo")}
                   </button>
                 </>
               ) : (
                 <button className="group px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5">
                   <Shield className="w-5 h-5" />
-                  Go to Dashboard
+                  {t("landing.hero.goToDashboard")}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               )}

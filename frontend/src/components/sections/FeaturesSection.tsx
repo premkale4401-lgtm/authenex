@@ -11,51 +11,6 @@ import {
   ArrowUpRight
 } from "lucide-react";
 
-const features = [
-  {
-    icon: FileCheck,
-    title: "Image Forensics",
-    description: "Detect AI-generated images, deepfakes, and manipulated photos using advanced GAN fingerprinting and metadata analysis.",
-    color: "sky",
-    stat: "99.9% accuracy"
-  },
-  {
-    icon: Scan,
-    title: "Video Verification",
-    description: "Temporal consistency analysis, frame-level interpolation detection, and lip-sync verification for comprehensive video authenticity.",
-    color: "indigo",
-    stat: "Real-time"
-  },
-  {
-    icon: Lock,
-    title: "Document Authenticity",
-    description: "Font forensics, signature verification, layout analysis, and blockchain timestamp validation for legal document integrity.",
-    color: "emerald",
-    stat: "Court-ready"
-  },
-  {
-    icon: BarChart3,
-    title: "Email Intelligence",
-    description: "Header forensics, SPF/DKIM validation, sender reputation analysis, and phishing detection powered by threat intelligence.",
-    color: "rose",
-    stat: "ISP-integrated"
-  },
-  {
-    icon: Radio,
-    title: "Audio Analysis",
-    description: "Voice biometric matching, synthetic speech detection, acoustic environment analysis, and deepfake audio identification.",
-    color: "amber",
-    stat: "Neural net"
-  },
-  {
-    icon: Cpu,
-    title: "Text Detection",
-    description: "Perplexity scoring, burstiness analysis, stylometry matching, and LLM attribution for synthetic text identification.",
-    color: "violet",
-    stat: "GPT-4 ready"
-  }
-];
-
 const colorClasses: Record<string, { bg: string; text: string; border: string; gradient: string }> = {
   sky: { bg: "bg-sky-500/10", text: "text-sky-400", border: "border-sky-500/20", gradient: "from-sky-500 to-blue-500" },
   indigo: { bg: "bg-indigo-500/10", text: "text-indigo-400", border: "border-indigo-500/20", gradient: "from-indigo-500 to-purple-500" },
@@ -65,7 +20,56 @@ const colorClasses: Record<string, { bg: string; text: string; border: string; g
   violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20", gradient: "from-violet-500 to-fuchsia-500" },
 };
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function FeaturesSection() {
+  const { t } = useLanguage();
+
+  const features = [
+    {
+      icon: FileCheck,
+      title: t("landing.features.imageForensics.title"),
+      description: t("landing.features.imageForensics.description"),
+      color: "sky",
+      stat: t("landing.features.imageForensics.stat")
+    },
+    {
+      icon: Scan,
+      title: t("landing.features.videoVerification.title"),
+      description: t("landing.features.videoVerification.description"),
+      color: "indigo",
+      stat: t("landing.features.videoVerification.stat")
+    },
+    {
+      icon: Lock,
+      title: t("landing.features.documentAuth.title"),
+      description: t("landing.features.documentAuth.description"),
+      color: "emerald",
+      stat: t("landing.features.documentAuth.stat")
+    },
+    {
+      icon: BarChart3,
+      title: t("landing.features.emailIntel.title"),
+      description: t("landing.features.emailIntel.description"),
+      color: "rose",
+      stat: t("landing.features.emailIntel.stat")
+    },
+    {
+      icon: Radio,
+      title: t("landing.features.audioAnalysis.title"),
+      description: t("landing.features.audioAnalysis.description"),
+      color: "amber",
+      stat: t("landing.features.audioAnalysis.stat")
+    },
+    {
+      icon: Cpu,
+      title: t("landing.features.textDetection.title"),
+      description: t("landing.features.textDetection.description"),
+      color: "violet",
+      stat: t("landing.features.textDetection.stat")
+    }
+  ];
+
   return (
     <section className="relative py-24 lg:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -78,17 +82,16 @@ export default function FeaturesSection() {
           className="text-center mb-16 lg:mb-20"
         >
           <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
-            Platform Capabilities
+            {t("landing.features.sectionBadge")}
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-100 mb-4">
-            Six Dimensions of{" "}
+            {t("landing.features.sectionTitle")}{" "}
             <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Digital Forensics
+              {t("landing.features.sectionTitleHighlight")}
             </span>
           </h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Comprehensive analysis across all digital content types, powered by 
-            state-of-the-art neural networks and quantum-resistant verification.
+            {t("landing.features.sectionDescription")}
           </p>
         </motion.div>
 
@@ -98,7 +101,7 @@ export default function FeaturesSection() {
             const colors = colorClasses[feature.color];
             return (
               <motion.div
-                key={feature.title}
+                key={idx}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
