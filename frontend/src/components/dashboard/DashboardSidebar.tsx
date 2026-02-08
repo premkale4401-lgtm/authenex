@@ -20,16 +20,18 @@ import {
 import { signOut } from "next-auth/react";
 
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: Newspaper },
-  { name: "New Analysis", href: "/dashboard/analyze", icon: Scan },
-  { name: "My Cases", href: "/dashboard/cases", icon: FolderKanban },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "nav.dashboard", href: "/dashboard", icon: Newspaper },
+  { name: "nav.newAnalysis", href: "/dashboard/analyze", icon: Scan },
+  { name: "nav.myCases", href: "/dashboard/cases", icon: FolderKanban },
+  { name: "nav.analytics", href: "/dashboard/analytics", icon: BarChart3 },
 ];
 
 const bottomItems = [
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
-  { name: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
+  { name: "nav.settings", href: "/dashboard/settings", icon: Settings },
+  { name: "nav.help", href: "/dashboard/help", icon: HelpCircle },
 ];
+
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardSidebar({ 
   collapsed, 
@@ -38,6 +40,7 @@ export default function DashboardSidebar({
   collapsed: boolean; 
   setCollapsed: (collapsed: boolean) => void;
 }) {
+  const { t } = useLanguage();
   const pathname = usePathname();
 
   return (
@@ -93,7 +96,7 @@ export default function DashboardSidebar({
                       animate={{ opacity: 1 }}
                       className="font-medium text-sm whitespace-nowrap"
                     >
-                      {item.name}
+                      {t(item.name)}
                     </motion.span>
                   )}
                   {isActive && !collapsed && (
@@ -124,7 +127,7 @@ export default function DashboardSidebar({
                       animate={{ opacity: 1 }}
                       className="font-medium text-sm whitespace-nowrap"
                     >
-                      {item.name}
+                      {t(item.name)}
                     </motion.span>
                   )}
                 </Link>
@@ -159,7 +162,7 @@ export default function DashboardSidebar({
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px]">{item.name}</span>
+                <span className="text-[10px]">{t(item.name)}</span>
               </Link>
             );
           })}

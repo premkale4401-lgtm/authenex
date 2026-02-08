@@ -5,7 +5,10 @@ import { useAuthContext } from "@/context/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { Clock, Activity } from "lucide-react";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function ScanHistory() {
+  const { t } = useLanguage();
   const { user } = useAuthContext();
   const [scans, setScans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,13 +34,13 @@ export default function ScanHistory() {
   if (!user) return null;
 
   if (loading) {
-    return <div className="p-4 text-center text-slate-500 animate-pulse">Loading history...</div>;
+    return <div className="p-4 text-center text-slate-500 animate-pulse">{t('scanHistory.loading')}</div>;
   }
 
   if (scans.length === 0) {
     return (
       <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl">
-        <p className="text-slate-500">No scan history found.</p>
+        <p className="text-slate-500">{t('scanHistory.noData')}</p>
       </div>
     );
   }
@@ -46,7 +49,7 @@ export default function ScanHistory() {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Clock className="w-4 h-4 text-sky-400" />
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Recent Scans</h3>
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{t('scanHistory.title')}</h3>
       </div>
 
       <div className="grid gap-3">
@@ -68,14 +71,14 @@ export default function ScanHistory() {
                    {scan.verdict}
                  </p>
                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                   {scan.createdAt?.seconds ? formatDistanceToNow(new Date(scan.createdAt.seconds * 1000)) + " ago" : "Just now"}
+                   {scan.createdAt?.seconds ? formatDistanceToNow(new Date(scan.createdAt.seconds * 1000)) + " " + t('scanHistory.ago') : t('scanHistory.justNow')}
                  </p>
                </div>
             </div>
 
             <div className="text-right">
               <span className="text-sky-400 font-mono font-bold">{scan.confidence}%</span>
-              <p className="text-xs text-slate-600">Confidence</p>
+              <p className="text-xs text-slate-600">{t('scanHistory.confidence')}</p>
             </div>
           </div>
         ))}

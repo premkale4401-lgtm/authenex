@@ -124,8 +124,8 @@ async def analyze_asset(
             print(f"✅ Image loaded: {image.size}, {image.mode}")
             gemini_content.append(image)
             
-            prompt = """Analyze this IMAGE for AI generation markers (Midjourney, DALL-E, etc.). 
-            Check anatomy, texture noise, lighting logic, and frequency artifacts.
+            prompt = """Analyze this IMAGE for AI generation markers (Midjourney, DALL-E, Stable Diffusion, etc.). 
+            Provide DETAILED layer-by-layer analysis with specific findings for each category.
             
             Return ONLY valid JSON (no markdown) with this EXACT structure:
             {
@@ -133,7 +133,7 @@ async def analyze_asset(
               "confidence": <0-100 float>,
               "aiPercentage": <0-100 float>,
               "humanPercentage": <0-100 float>,
-              "findings": ["<finding 1>", "<finding 2>"],
+              "findings": ["<overall finding 1>", "<overall finding 2>"],
               "categoryScores": {
                 "texture": <0-100>,
                 "anatomy": <0-100>,
@@ -141,6 +141,38 @@ async def analyze_asset(
                 "background": <0-100>,
                 "semantics": <0-100>
                },
+              "detectionLayers": [
+                {
+                  "name": "Texture Analysis",
+                  "score": <0-100 AI probability for this layer>,
+                  "weight": 25,
+                  "findings": ["<specific texture finding 1>", "<specific texture finding 2>"]
+                },
+                {
+                  "name": "Anatomical Consistency",
+                  "score": <0-100 AI probability>,
+                  "weight": 20,
+                  "findings": ["<anatomy finding>"]
+                },
+                {
+                  "name": "Lighting & Shadows",
+                  "score": <0-100 AI probability>,
+                  "weight": 20,
+                  "findings": ["<lighting finding>"]
+                },
+                {
+                  "name": "Background Coherence",
+                  "score": <0-100 AI probability>,
+                  "weight": 15,
+                  "findings": ["<background finding>"]
+                },
+                {
+                  "name": "Semantic Plausibility",
+                  "score": <0-100 AI probability>,
+                  "weight": 20,
+                  "findings": ["<semantic finding>"]
+                }
+              ],
               "metadata": {
                 "potentialModel": "<string or null>",
                 "artifactsDetected": ["<artifact 1>", "<artifact 2>"]
@@ -294,6 +326,23 @@ async def analyze_asset(
         human_score = analysis.get("humanPercentage") or analysis.get("human_percentage") or analysis.get("humanScore") or 0
         
         print(f"🔢 EXTRACTED SCORES - AI: {ai_score}, Human: {human_score}")
+        
+        # Process detection layers and add status based on score
+        detection_layers = analysis.get("detectionLayers", [])
+        for layer in detection_layers:
+            score = layer.get("score", 0)
+            if score >= 80:
+                layer["status"] = "critical"
+            elif score >= 60:
+                layer["status"] = "elevated"
+            elif score >= 40:
+                layer["status"] = "warning"
+            else:
+                layer["status"] = "low"
+            
+            # Rename 'findings' to 'details' for consistency with frontend
+            if "findings" in layer:
+                layer["details"] = layer.pop("findings")
 
         result = {
             "verdict": analysis.get("verdict", "UNCERTAIN"),
@@ -305,11 +354,13 @@ async def analyze_asset(
              # Flattened for frontend compatibility
             "findings": analysis.get("findings", []),
             "categoryScores": analysis.get("categoryScores", {}),
+            "detectionLayers": detection_layers,  # NEW: Add processed layers
             "metadata": analysis.get("metadata", {}),
             # Kept for DB storage
             "details": {
                 "findings": analysis.get("findings", []),
                 "categoryScores": analysis.get("categoryScores", {}),
+                "detectionLayers": detection_layers,
                 "metadata": analysis.get("metadata", {})
             }
         }

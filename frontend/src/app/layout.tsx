@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import AuthenexChatWidget from "@/components/chat/AuthenexChatWidget";
 import { AnalysisProvider } from "@/context/AnalysisContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 // import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,10 +23,12 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>
-          <AnalysisProvider>
-            {children}
-            <AuthenexChatWidget />
-          </AnalysisProvider>
+          <LanguageProvider>
+            <AnalysisProvider>
+              {children}
+              <AuthenexChatWidget />
+            </AnalysisProvider>
+          </LanguageProvider>
         </Providers>
       </body>
     </html>

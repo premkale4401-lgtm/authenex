@@ -1,779 +1,316 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
-  BookOpen, 
-  Shield, 
-  FileText, 
+  Book, 
   MessageCircle, 
-  Mail, 
-  ChevronRight, 
-  ChevronDown,
+  FileText, 
+  HelpCircle, 
+  ChevronDown, 
+  ChevronUp, 
+  Shield, 
+  Zap, 
+  Eye, 
+  Lock, 
+  Activity, 
   AlertTriangle,
-  Lock,
-  Zap,
-  Clock,
-  HelpCircle,
-  Bug,
-  FileQuestion,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
+  Mail,
+  Video,
   Image as ImageIcon,
+  FileSearch,
   Mic,
-  FileType,
-  AtSign,
   Type
 } from "lucide-react";
-import Link from "next/link";
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-  }
-};
-
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 100, damping: 15 }
-  }
-};
-
-const detectionMethods = [
-  {
-    id: "images",
-    icon: ImageIcon,
-    title: "Image Analysis",
-    description: "Detects AI-generated or manipulated images through visual artifact analysis, generation signatures, and manipulation traces.",
-    signals: ["Visual artifacts and inconsistencies", "AI generation signatures", "Manipulation traces", "Metadata analysis"]
-  },
-  {
-    id: "audio",
-    icon: Mic,
-    title: "Audio Analysis",
-    description: "Identifies synthetic voices and audio manipulation through signal processing and frequency anomaly detection.",
-    signals: ["Synthetic voice indicators", "Signal anomalies", "Frequency inconsistencies", "Compression artifacts"]
-  },
-  {
-    id: "documents",
-    icon: FileType,
-    title: "Document Analysis",
-    description: "Examines documents for formatting inconsistencies, metadata signals, and structural anomalies.",
-    signals: ["Formatting inconsistencies", "Metadata verification", "Structural anomalies", "Font analysis"]
-  },
-  {
-    id: "emails",
-    icon: AtSign,
-    title: "Email Analysis",
-    description: "Detects phishing attempts, sender spoofing, and fraudulent content through header and content analysis.",
-    signals: ["Phishing indicators", "Sender spoofing patterns", "Header anomalies", "Linguistic fraud signals"]
-  },
-  {
-    id: "text",
-    icon: Type,
-    title: "Text Analysis",
-    description: "Identifies AI-generated text through pattern recognition, stylistic analysis, and statistical language features.",
-    signals: ["AI generation patterns", "Stylistic uniformity", "Statistical anomalies", "Perplexity scoring"]
-  }
-];
-
-const faqs = [
-  {
-    question: "What file formats are supported?",
-    answer: "Authenex supports a wide range of formats: Images (JPEG, PNG, TIFF, WebP, BMP), Audio (MP3, WAV, FLAC, AAC, OGG), Documents (PDF, DOCX, TXT, RTF), and raw text input. For best results, use original, uncompressed files."
-  },
-  {
-    question: "How accurate is the detection?",
-    answer: "Accuracy varies by content type and quality. High-quality original files typically yield 90-95% accuracy. Compressed, edited, or low-resolution content may reduce accuracy. Results are probability-based and should be combined with human judgment."
-  },
-  {
-    question: "How long does analysis take?",
-    answer: "Most analyses complete within 30-60 seconds. Complex documents or large audio files may take 2-3 minutes. Enterprise users receive priority processing with faster turnaround times."
-  },
-  {
-    question: "Is my data secure?",
-    answer: "Yes. All content is processed securely using encryption in transit and at rest. Files are automatically deleted after analysis (within 24 hours) and are never used to train models or shared with third parties."
-  },
-  {
-    question: "What does 'Inconclusive' mean?",
-    answer: "An inconclusive result indicates that Authenex cannot make a confident determination. This may occur with heavily processed content, insufficient data, or novel manipulation techniques. We recommend manual review in these cases."
-  },
-  {
-    question: "Can Authenex detect all deepfakes?",
-    answer: "No detection system is 100% effective. Authenex identifies most commercially available deepfake techniques, but new methods emerge continuously. Results should be part of a broader verification strategy."
-  }
-];
-
-const troubleshootingItems = [
-  {
-    icon: XCircle,
-    title: "Upload Failures",
-    description: "File won't upload or process",
-    solution: "Check file size (max 100MB), ensure format is supported, verify stable internet connection, and try clearing browser cache. If issues persist, contact support."
-  },
-  {
-    icon: Clock,
-    title: "Slow Analysis",
-    description: "Analysis taking longer than expected",
-    solution: "Large files or high server load may cause delays. Try reducing file size or quality. Enterprise users can check priority queue status in their dashboard."
-  },
-  {
-    icon: AlertCircle,
-    title: "Inconclusive Results",
-    description: "Low confidence or unclear results",
-    solution: "Provide original, uncompressed files. Avoid screenshots or copies. Ensure content hasn't been edited or processed by other tools before submission."
-  },
-  {
-    icon: Shield,
-    title: "Access Issues",
-    description: "Cannot access features or results",
-    solution: "Verify your subscription plan supports the feature. Check if your session expired. Clear cookies and log in again. Contact support for account-related issues."
-  }
-];
-
-const supportChannels = [
-  {
-    icon: Mail,
-    title: "Email Support",
-    description: "Get help via email within 24 hours",
-    action: "support@authenex.com",
-    href: "mailto:support@authenex.com",
-    available: "24/7"
-  },
-  {
-    icon: BookOpen,
-    title: "Documentation",
-    description: "Browse comprehensive guides and API docs",
-    action: "View Documentation",
-    href: "/docs",
-    available: "Always available"
-  },
-  {
-    icon: Bug,
-    title: "Report Issue",
-    description: "Submit bugs or technical problems",
-    action: "Submit Report",
-    href: "/dashboard/help/report",
-    available: "Response in 4-8 hours"
-  },
-  {
-    icon: MessageCircle,
-    title: "Live Chat",
-    description: "Enterprise users: Priority live support",
-    action: "Start Chat",
-    href: "#",
-    available: "Business hours",
-    premium: true
-  }
-];
+import { useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function HelpPage() {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [activeSection, setActiveSection] = useState("overview");
 
-  const filteredFaqs = faqs.filter(faq => 
-    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Detection methods data - could be expanded or moved to translations if descriptions get long
+  const detectionMethods = [
+    {
+      id: "image",
+      icon: ImageIcon,
+      title: t('analyze.types.image'),
+      description: "Pixel-level analysis, error level analysis (ELA), and metadata verification to detect manipulation."
+    },
+    {
+      id: "video",
+      icon: Video,
+      title: t('analyze.types.video'),
+      description: "Frame-by-frame analysis, temporal consistency checks, and face artifact detection."
+    },
+    {
+      id: "audio",
+      icon: Mic,
+      title: t('analyze.types.audio'),
+      description: "Spectrogram analysis, voice cloning detection, and background noise consistency checks."
+    },
+    {
+      id: "text",
+      icon: Type,
+      title: t('analyze.types.text'),
+      description: "Stylometric analysis, perplexity scoring, and burstiness evaluation for AI text detection."
+    }
+  ];
+
+  // FAQs data
+  const faqs = [
+    {
+      question: "How accurate is the detection? (95%+)",
+      answer: "Our models achieve over 95% accuracy on standard benchmarks. However, AI generation techniques evolve rapidly. We recommend using our results as a strong indicator alongside human review."
+    },
+    {
+      question: "What file formats are supported?",
+      answer: "We support common formats: JPG, PNG, WEBP for images; MP4, MOV, AVI for video; MP3, WAV for audio; and PDF, DOCX, TXT for text analysis."
+    },
+    {
+      question: "Is my data private?",
+      answer: "Yes. All uploaded files are processed securely and automatically deleted from our servers after analysis, unless you explicitly choose to save them to your case files."
+    },
+    {
+      question: "How do I interpret the 'Confidence Score'?",
+      answer: "The Confidence Score indicates the model's certainty. A high score (e.g., 90% AI) means the model found strong evidence of AI generation. A low score (e.g., 55%) suggests ambiguity."
+    },
+    {
+      question: "Can I use this for legal evidence?",
+      answer: "Our reports provide detailed forensic technical breakdowns that can support investigations. However, they should be validated by certified forensic experts for legal proceedings."
+    },
+    {
+      question: "What if I get an 'Inconclusive' result?",
+      answer: "Inconclusive results occur when the content lacks sufficient data or has been heavily compressed. Try uploading a higher quality version if possible."
+    }
+  ];
+
+  const troubleshootingItems = [
+    { title: "Upload Failures", desc: "Check file size (max 500MB) and format support." },
+    { title: "Slow Analysis", desc: "Large video files may take several minutes to process." },
+    { title: "Inconclusive Results", desc: "Ensure high-quality, uncompressed inputs for best results." },
+    { title: "Access Issues", desc: "Verify your internet connection and API credits." }
+  ];
+
+  const supportChannels = [
+    { icon: Mail, title: t('help.channels.email'), desc: "support@authenex.com", action: "Email Us" },
+    { icon: Book, title: t('help.channels.docs'), desc: "Detailed guides & API", action: "View Docs" },
+    { icon: AlertTriangle, title: t('help.channels.report'), desc: "Bug reports", action: "Report" },
+    { icon: MessageCircle, title: t('help.channels.chat'), desc: "Mon-Fri, 9am-5pm", action: "Chat Now" }
+  ];
 
   return (
-    <div className="min-h-screen pb-20 lg:pb-0">
+    <div className="max-w-6xl mx-auto pb-20 space-y-8">
+      
       {/* Hero Section */}
       <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative mb-8"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-900 border border-slate-800 p-8 md:p-12 text-center"
       >
-        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-3xl p-8 lg:p-12 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -ml-32 -mb-32" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none" />
+        
+        <div className="relative z-10 max-w-2xl mx-auto">
+          <span className="px-3 py-1 bg-sky-500/20 text-sky-400 text-xs font-semibold rounded-full uppercase tracking-wider mb-4 inline-block">
+            {t('help.hero.badge')}
+          </span>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('help.hero.title')}</h1>
+          <p className="text-slate-400 mb-8 text-lg">{t('help.hero.subtitle')}</p>
           
-          <div className="relative">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-3 py-1 bg-sky-500/10 border border-sky-500/20 rounded-full text-sky-400 text-xs font-semibold uppercase tracking-wider mb-4"
-            >
-              <HelpCircle className="w-3 h-3" />
-              Help Center
-            </motion.div>
-            
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-3xl lg:text-4xl font-bold text-white mb-4"
-            >
-              How can we help you?
-            </motion.h1>
-            
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-slate-400 max-w-2xl mb-8"
-            >
-              Find answers about Authenex features, detection processes, result interpretation, and troubleshooting. Our support team is here to assist with forensic analysis workflows.
-            </motion.p>
-
-            {/* Search Bar */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="relative max-w-2xl"
-            >
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search for answers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 transition-all"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-slate-500">
-                <span className="px-2 py-1 bg-slate-700 rounded">⌘</span>
-                <span className="px-2 py-1 bg-slate-700 rounded">K</span>
-              </div>
-            </motion.div>
+          <div className="relative max-w-lg mx-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <input 
+              type="text"
+              placeholder={t('help.hero.search')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-800/80 backdrop-blur-sm border border-slate-700 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all shadow-lg"
+            />
           </div>
         </div>
       </motion.div>
 
-      {/* Quick Navigation */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
-      >
+      {/* Quick Navigation Rows */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { id: "overview", label: "Overview", icon: BookOpen },
-          { id: "detection", label: "Detection Methods", icon: Shield },
-          { id: "troubleshooting", label: "Troubleshooting", icon: Zap },
-          { id: "contact", label: "Contact Support", icon: MessageCircle },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <motion.button
-              key={item.id}
-              variants={itemVariants}
-              onClick={() => {
-                setActiveSection(item.id);
-                document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className={`p-4 rounded-xl border text-left transition-all ${
-                activeSection === item.id
-                  ? "bg-sky-500/10 border-sky-500/20 text-sky-400"
-                  : "bg-slate-900/50 border-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-800/50"
-              }`}
-            >
-              <Icon className="w-6 h-6 mb-2" />
-              <span className="font-medium text-sm">{item.label}</span>
-            </motion.button>
-          );
-        })}
-      </motion.div>
+          { id: "overview", label: t('help.sections.overview'), icon: Eye },
+          { id: "detection", label: t('help.sections.detection'), icon: Shield },
+          { id: "troubleshooting", label: t('help.sections.troubleshooting'), icon: Zap },
+          { id: "contact", label: t('help.sections.contact'), icon: MessageCircle }
+        ].map((item) => (
+           <button
+            key={item.id}
+            onClick={() => setActiveSection(item.id)}
+            className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
+              activeSection === item.id 
+                ? "bg-sky-500/10 border-sky-500/50 text-sky-400"
+                : "bg-slate-900/50 border-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white"
+            }`}
+          >
+            <item.icon className="w-6 h-6 mb-2" />
+            <span className="font-medium text-sm">{item.label}</span>
+          </button>
+        ))}
+      </div>
 
-      <div className="space-y-16">
-        {/* What is Authenex */}
-        <motion.section
-          id="overview"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="scroll-mt-24"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-sky-500/10 rounded-xl flex items-center justify-center">
-              <Shield className="w-5 h-5 text-sky-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">What is Authenex</h2>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-8">
           
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6 lg:p-8">
-            <p className="text-slate-300 leading-relaxed mb-6">
-              Authenex is an AI-powered forensic detection platform designed to analyze and assess the authenticity of digital content. The platform provides probability-based assessments to help forensic analysts, security professionals, and organizations detect AI-generated, manipulated, or fraudulent content.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {[
-                { icon: ImageIcon, label: "Images", desc: "Visual content" },
-                { icon: Mic, label: "Audio", desc: "Voice & sound" },
-                { icon: FileType, label: "Documents", desc: "PDFs & files" },
-                { icon: AtSign, label: "Emails", desc: "Message analysis" },
-                { icon: Type, label: "Text", desc: "Plain text" },
-              ].map((item, index) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                    className="p-4 bg-slate-800/30 rounded-xl text-center group hover:bg-slate-800/50 transition-all"
-                  >
-                    <div className="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-sky-500/10 group-hover:text-sky-400 transition-all">
-                      <Icon className="w-6 h-6 text-slate-400 group-hover:text-sky-400" />
-                    </div>
-                    <p className="text-white font-medium text-sm">{item.label}</p>
-                    <p className="text-slate-500 text-xs mt-1">{item.desc}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-amber-400 font-medium text-sm mb-1">Probability-Based Assessment</p>
-                <p className="text-slate-400 text-sm">Authenex provides likelihood scores rather than absolute determinations. Results should be interpreted as forensic indicators, not definitive proof.</p>
+          {/* Overview Section */}
+          <section id="overview">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Eye className="w-5 h-5 text-sky-400" />
+              {t('help.sections.overview')}
+            </h2>
+            <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-6 prose prose-invert max-w-none">
+              <h3 className="text-lg font-semibold text-white mb-2">{t('help.overview.title')}</h3>
+              <p className="text-slate-300 mb-4">
+                {t('help.overview.desc')}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <h4 className="font-medium text-emerald-400 mb-2">{t('analyze.results.authentic')}</h4>
+                  <p className="text-sm text-slate-400">Content shows natural statistical patterns consistent with organic creation.</p>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <h4 className="font-medium text-rose-400 mb-2">{t('analyze.results.aiGenerated')}</h4>
+                  <p className="text-sm text-slate-400">Content exhibits artifacts, frequency anomalies, or patterns typical of generative models.</p>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.section>
+          </section>
 
-        {/* Detection Methods */}
-        <motion.section
-          id="detection"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="scroll-mt-24"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center">
-              <Zap className="w-5 h-5 text-indigo-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">Detection Process</h2>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {detectionMethods.map((method, index) => {
-              const Icon = method.icon;
-              return (
-                <motion.div
-                  key={method.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6 hover:border-slate-700/50 transition-all group"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 transition-all">
-                      <Icon className="w-6 h-6 text-slate-400 group-hover:text-indigo-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">{method.title}</h3>
-                      <p className="text-slate-400 text-sm mb-4">{method.description}</p>
-                      
-                      <div className="space-y-2">
-                        <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Analytical Signals</p>
-                        <div className="flex flex-wrap gap-2">
-                          {method.signals.map((signal) => (
-                            <span 
-                              key={signal} 
-                              className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded-md"
-                            >
-                              {signal}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+          {/* Detection Methods */}
+          <section id="detection">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-sky-400" />
+              {t('help.sections.detection')}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {detectionMethods.map((method) => (
+                <div key={method.id} className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-5 hover:border-sky-500/30 transition-colors">
+                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-sky-400 mb-3">
+                    <method.icon className="w-5 h-5" />
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 p-6 bg-slate-900/50 border border-slate-800/50 rounded-2xl">
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-              Multi-Signal Analysis
-            </h4>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Authenex combines multiple analytical signals using ensemble methods to produce final results. This approach increases accuracy and reduces false positives by cross-referencing different detection techniques. Each content type undergoes specialized preprocessing before signal extraction.
-            </p>
-          </div>
-        </motion.section>
-
-        {/* Understanding Results */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="scroll-mt-24"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-              <FileText className="w-5 h-5 text-emerald-400" />
+                  <h3 className="font-semibold text-white mb-1">{method.title}</h3>
+                  <p className="text-sm text-slate-400">{method.description}</p>
+                </div>
+              ))}
             </div>
-            <h2 className="text-2xl font-bold text-white">Understanding Results</h2>
-          </div>
+          </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
-              <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-              </div>
-              <h4 className="text-white font-semibold mb-2">Likely Authentic</h4>
-              <p className="text-slate-400 text-sm">Content shows strong indicators of human creation with no detectable manipulation signals.</p>
+          {/* FAQs */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-sky-400" />
+              {t('help.faq.title')}
+            </h2>
+            <div className="space-y-3">
+              {faqs.filter(f => f.question.toLowerCase().includes(searchQuery.toLowerCase())).map((faq, idx) => (
+                <Disclosure key={idx} question={faq.question} answer={faq.answer} />
+              ))}
+              {faqs.filter(f => f.question.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <p className="text-slate-500 text-center py-4">{t('help.faq.noResults')}</p>
+              )}
             </div>
-            
-            <div className="p-6 bg-rose-500/5 border border-rose-500/20 rounded-2xl">
-              <div className="w-10 h-10 bg-rose-500/10 rounded-lg flex items-center justify-center mb-4">
-                <XCircle className="w-5 h-5 text-rose-400" />
-              </div>
-              <h4 className="text-white font-semibold mb-2">Likely AI-Generated</h4>
-              <p className="text-slate-400 text-sm">Multiple signals indicate synthetic or manipulated content with high confidence.</p>
-            </div>
-            
-            <div className="p-6 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-              <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center mb-4">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
-              </div>
-              <h4 className="text-white font-semibold mb-2">Inconclusive</h4>
-              <p className="text-slate-400 text-sm">Insufficient signals or conflicting indicators prevent confident determination.</p>
-            </div>
-          </div>
+          </section>
+        </div>
 
+        {/* Sidebar */}
+        <div className="space-y-6">
+          
+          {/* Troubleshooting Widget */}
           <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-6">
-            <h4 className="text-white font-semibold mb-4">Confidence Score Interpretation</h4>
+             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-400" />
+              {t('help.sections.troubleshooting')}
+            </h3>
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">
-                  <span className="text-emerald-400 font-semibold">90-100%</span>
-                </div>
-                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full w-full bg-emerald-500 rounded-full" />
-                </div>
-                <span className="text-slate-400 text-sm w-32">Very High Confidence</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">
-                  <span className="text-sky-400 font-semibold">70-89%</span>
-                </div>
-                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full w-[80%] bg-sky-500 rounded-full" />
-                </div>
-                <span className="text-slate-400 text-sm w-32">High Confidence</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">
-                  <span className="text-amber-400 font-semibold">50-69%</span>
-                </div>
-                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full w-[60%] bg-amber-500 rounded-full" />
-                </div>
-                <span className="text-slate-400 text-sm w-32">Moderate Confidence</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">
-                  <span className="text-slate-400 font-semibold">&lt;50%</span>
-                </div>
-                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full w-[40%] bg-slate-500 rounded-full" />
-                </div>
-                <span className="text-slate-400 text-sm w-32">Low Confidence</span>
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* FAQ Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
-              <FileQuestion className="w-5 h-5 text-purple-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">Frequently Asked Questions</h2>
-          </div>
-
-          <div className="space-y-3">
-            {filteredFaqs.map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                viewport={{ once: true }}
-                className="bg-slate-900/50 border border-slate-800/50 rounded-xl overflow-hidden"
-              >
-                <button
-                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-800/30 transition-all"
-                >
-                  <span className="text-white font-medium pr-4">{faq.question}</span>
-                  <motion.div
-                    animate={{ rotate: expandedFaq === index ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                  </motion.div>
-                </button>
-                <AnimatePresence>
-                  {expandedFaq === index && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="px-5 pb-5 text-slate-400 leading-relaxed">
-                        {faq.answer}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-            {filteredFaqs.length === 0 && (
-              <div className="text-center py-12 text-slate-500">
-                <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No results found for "{searchQuery}"</p>
-              </div>
-            )}
-          </div>
-        </motion.section>
-
-        {/* Troubleshooting */}
-        <motion.section
-          id="troubleshooting"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="scroll-mt-24"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center">
-              <Zap className="w-5 h-5 text-rose-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">Troubleshooting</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {troubleshootingItems.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-6 hover:border-slate-700/50 transition-all"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-rose-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-semibold mb-1">{item.title}</h4>
-                      <p className="text-slate-500 text-sm mb-3">{item.description}</p>
-                      <div className="p-3 bg-slate-800/50 rounded-lg">
-                        <p className="text-slate-300 text-sm">
-                          <span className="text-emerald-400 font-medium">Solution: </span>
-                          {item.solution}
-                        </p>
-                      </div>
-                    </div>
+              {troubleshootingItems.map((item, idx) => (
+                <div key={idx} className="flex gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-600 mt-2 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-200">{item.title}</h4>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.section>
-
-        {/* Privacy & Limitations */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Privacy & Data Handling</h3>
-              </div>
-              <ul className="space-y-3 text-slate-400 text-sm">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <span>Content is encrypted in transit and at rest using AES-256</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <span>Automatic deletion within 24 hours of analysis completion</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <span>No content used for model training or improvement</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <span>No third-party sharing or external API calls with content</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <span>Processing occurs in isolated, secure environments</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">Limitations & Responsible Use</h3>
-              </div>
-              <ul className="space-y-3 text-slate-400 text-sm">
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <span>Heavily compressed or edited content may reduce accuracy</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <span>Novel manipulation techniques may evade detection initially</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <span>Results should complement, not replace, human judgment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <span>Cross-reference with other verification methods when possible</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <span>Regular updates required to maintain detection effectiveness</span>
-                </li>
-              </ul>
+              ))}
             </div>
           </div>
-        </motion.section>
 
-        {/* Support Channels */}
-        <motion.section
-          id="contact"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="scroll-mt-24"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-sky-500/10 rounded-xl flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-sky-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">Get Support</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {supportChannels.map((channel, index) => {
-              const Icon = channel.icon;
-              return (
-                <motion.div
-                  key={channel.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
+          {/* Support Channels */}
+          <div className="bg-gradient-to-br from-sky-500/10 to-indigo-500/10 border border-sky-500/20 rounded-2xl p-6">
+            <h3 className="font-semibold text-white mb-4">{t('help.sections.contact')}</h3>
+            <div className="space-y-3">
+              {supportChannels.map((channel, idx) => (
+                <a 
+                  key={idx}
+                  href="#"
+                  className="flex items-center gap-3 p-3 bg-slate-900/50 hover:bg-slate-900/80 rounded-xl border border-slate-700/50 transition-all group"
                 >
-                  {channel.action === "Start Chat" ? (
-                    <button
-                      onClick={() => window.dispatchEvent(new CustomEvent('open-chat'))}
-                      className="block w-full text-left h-full p-6 bg-slate-900/50 border border-slate-800/50 rounded-2xl hover:border-sky-500/30 hover:bg-slate-800/30 transition-all group"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-sky-500/10 transition-all">
-                          <Icon className="w-5 h-5 text-slate-400 group-hover:text-sky-400" />
-                        </div>
-                        {channel.premium && (
-                          <span className="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-full">
-                            Enterprise
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="text-white font-semibold mb-1">{channel.title}</h4>
-                      <p className="text-slate-400 text-sm mb-4">{channel.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sky-400 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                          {channel.action}
-                          <ChevronRight className="w-4 h-4" />
-                        </span>
-                        <span className="text-slate-500 text-xs">{channel.available}</span>
-                      </div>
-                    </button>
-                  ) : (
-                    <Link
-                      href={channel.href}
-                      className="block h-full p-6 bg-slate-900/50 border border-slate-800/50 rounded-2xl hover:border-sky-500/30 hover:bg-slate-800/30 transition-all group"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-sky-500/10 transition-all">
-                          <Icon className="w-5 h-5 text-slate-400 group-hover:text-sky-400" />
-                        </div>
-                        {channel.premium && (
-                          <span className="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-full">
-                            Enterprise
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="text-white font-semibold mb-1">{channel.title}</h4>
-                      <p className="text-slate-400 text-sm mb-4">{channel.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sky-400 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                          {channel.action}
-                          <ChevronRight className="w-4 h-4" />
-                        </span>
-                        <span className="text-slate-500 text-xs">{channel.available}</span>
-                      </div>
-                    </Link>
-                  )}
-                </motion.div>
-              );
-            })}
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-sky-400 transition-colors">
+                    <channel.icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">{channel.title}</p>
+                    <p className="text-xs text-slate-500">{channel.desc}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
-        </motion.section>
 
-        {/* Disclaimer */}
-        <motion.section
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="border-t border-slate-800/50 pt-8"
-        >
-          <div className="bg-slate-900/30 border border-slate-800/50 rounded-2xl p-6">
+          {/* Disclaimer */}
+          <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-slate-500 flex-shrink-0" />
               <div>
-                <h4 className="text-slate-400 font-semibold mb-2 text-sm uppercase tracking-wider">Disclaimer</h4>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Authenex provides AI-assisted authenticity assessments for forensic and investigative purposes. Results are probabilistic and should not be used as the sole basis for legal, financial, medical, or regulatory decisions. Always combine Authenex analysis with human expertise and additional verification methods. The platform is provided "as is" without warranties of any kind. Users are responsible for compliance with applicable laws and regulations regarding digital content analysis.
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  {t('help.disclaimer.title')}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {t('help.disclaimer.text')}
                 </p>
               </div>
             </div>
           </div>
-        </motion.section>
+
+        </div>
       </div>
+    </div>
+  );
+}
+
+function Disclosure({ question, answer }: { question: string, answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border border-slate-800/50 rounded-xl overflow-hidden bg-slate-900/30">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition-colors"
+      >
+        <span className="font-medium text-slate-200 text-sm">{question}</span>
+        {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 pt-0 text-sm text-slate-400 leading-relaxed border-t border-slate-800/50">
+              {answer}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

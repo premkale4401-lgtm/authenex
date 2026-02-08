@@ -6,10 +6,15 @@ import NewsCard from './NewsCard';
 import { cn } from '../../lib/utils';
 import { Newspaper, Shield, Cpu, Scale, Briefcase, MessageCircle, Globe } from 'lucide-react';
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function NewsFeed() {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<NewsCategory | 'all'>('all');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ... (useEffect remains same) ...
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -28,13 +33,13 @@ export default function NewsFeed() {
   }, [activeCategory]);
 
   const categories = [
-    { id: 'all', label: 'Top Stories', icon: Globe },
-    { id: 'deepfake', label: 'Deepfakes', icon: Newspaper },
-    { id: 'cybercrime', label: 'Cybercrime', icon: Shield },
-    { id: 'ai', label: 'AI Security', icon: Cpu },
-    { id: 'government', label: 'Policy', icon: Scale },
-    { id: 'cases', label: 'Cases', icon: Briefcase },
-    { id: 'social', label: 'Social', icon: MessageCircle },
+    { id: 'all', label: t('news.top'), icon: Globe },
+    { id: 'deepfake', label: t('news.deepfake'), icon: Newspaper },
+    { id: 'cybercrime', label: t('news.cybercrime'), icon: Shield },
+    { id: 'ai', label: t('news.ai'), icon: Cpu },
+    { id: 'government', label: t('news.policy'), icon: Scale },
+    { id: 'cases', label: t('news.cases'), icon: Briefcase },
+    { id: 'social', label: t('news.social'), icon: MessageCircle },
   ];
 
 

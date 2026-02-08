@@ -17,8 +17,10 @@ import {
   Trash2
 } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function SettingsPage() {
+  const { t } = useLanguage();
   const [theme, setTheme] = useState("dark");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -34,11 +36,11 @@ export default function SettingsPage() {
 
   const basicSections = [
     {
-      title: "Appearance",
+      title: t('settings.appearance'),
       items: [
         {
           icon: Moon,
-          label: "Dark Mode",
+          label: t('settings.items.darkMode'),
           description: "Always use dark theme",
           control: (
             <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-pointer">
@@ -48,8 +50,8 @@ export default function SettingsPage() {
         },
         {
           icon: Globe,
-          label: "Language",
-          description: "English (US)",
+          label: t('settings.items.language'),
+          description: "English (US)", // Ideally this should be dynamic based on current language
           control: (
             <button className="text-sky-400 hover:text-sky-300 text-sm font-medium flex items-center gap-1">
               Change <ChevronRight className="w-4 h-4" />
@@ -59,11 +61,11 @@ export default function SettingsPage() {
       ]
     },
     {
-      title: "Notifications",
+      title: t('settings.notifications'),
       items: [
         {
           icon: Bell,
-          label: "Email Notifications",
+          label: t('settings.items.emailNotif'),
           description: "Receive weekly summaries",
           control: (
             <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-pointer">
@@ -73,7 +75,7 @@ export default function SettingsPage() {
         },
         {
           icon: Smartphone,
-          label: "Push Notifications",
+          label: t('settings.items.pushNotif'),
           description: "Receive updates on your device",
           control: (
             <div className="w-12 h-6 bg-slate-700 rounded-full relative cursor-pointer">
@@ -88,8 +90,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20 relative">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-slate-400">Manage your account preferences and security.</p>
+        <h1 className="text-3xl font-bold text-white mb-2">{t('settings.title')}</h1>
+        <p className="text-slate-400">{t('settings.subtitle')}</p>
       </div>
 
       <div className="grid gap-6">
@@ -128,13 +130,13 @@ export default function SettingsPage() {
             transition={{ delay: 0.3 }}
             className="space-y-6"
         >
-          <h2 className="text-xl font-bold text-white px-1">Security & Privacy</h2>
+          <h2 className="text-xl font-bold text-white px-1">{t('settings.security')}</h2>
           
           {/* Security Score */}
           <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">Security Score</h3>
+                <h3 className="text-lg font-semibold text-white mb-1">{t('settings.securityScore')}</h3>
                 <p className="text-slate-400 text-sm">Your account security status</p>
               </div>
               <div className="w-20 h-20 relative">
@@ -216,18 +218,18 @@ export default function SettingsPage() {
           <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-rose-400 mb-4 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
-              Danger Zone
+              {t('settings.dangerZone')}
             </h3>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-medium">Delete Account</p>
+                <p className="text-white font-medium">{t('settings.deleteAccount')}</p>
                 <p className="text-slate-400 text-sm">Permanently delete your account and all data</p>
               </div>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl font-medium transition-all"
               >
-                Delete Account
+                {t('settings.deleteAccount')}
               </button>
             </div>
           </div>
@@ -254,22 +256,22 @@ export default function SettingsPage() {
               <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
                 <Trash2 className="w-6 h-6 text-rose-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Delete Account?</h3>
+              <h3 className="text-xl font-bold text-white mb-2">{t('profile.delete.title')}</h3>
               <p className="text-slate-400 mb-6">
-                This action cannot be undone. All your data, analyses, and cases will be permanently deleted.
+                {t('profile.delete.desc')}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-all"
                 >
-                  Cancel
+                  {t('profile.cancel')}
                 </button>
                 <button
                   onClick={() => {/* Handle delete */}}
                   className="flex-1 py-2.5 bg-rose-500 hover:bg-rose-400 text-white rounded-xl font-medium transition-all"
                 >
-                  Delete
+                  {t('profile.delete.confirm')}
                 </button>
               </div>
             </motion.div>

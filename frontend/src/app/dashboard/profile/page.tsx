@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Mock data - replace with actual API calls
 const userStats = {
@@ -55,13 +56,8 @@ const achievements = [
   { id: 5, title: "Speed Demon", description: "Analysis under 30 seconds", icon: "⚡", unlocked: false, progress: 0, total: 1 },
 ];
 
-const securitySettings = [
-  { id: "2fa", label: "Two-Factor Authentication", enabled: true, description: "Secure your account with 2FA" },
-  { id: "biometric", label: "Biometric Login", enabled: false, description: "Use fingerprint or face recognition" },
-  { id: "alerts", label: "Security Alerts", enabled: true, description: "Get notified of suspicious activity" },
-];
-
 export default function ProfilePage() {
+  const { t } = useLanguage();
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
@@ -81,9 +77,9 @@ export default function ProfilePage() {
   });
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: User },
-    { id: "activity", label: "Activity", icon: Activity },
-    { id: "achievements", label: "Achievements", icon: Award },
+    { id: "overview", label: t('profile.tabs.overview'), icon: User },
+    { id: "activity", label: t('profile.tabs.activity'), icon: Activity },
+    { id: "achievements", label: t('profile.tabs.achievements'), icon: Award },
   ];
 
   const containerVariants: Variants = {
@@ -204,7 +200,7 @@ export default function ProfilePage() {
               className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-sky-500/25"
             >
               {isEditing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-              {isEditing ? "Save Changes" : "Edit Profile"}
+              {isEditing ? t('profile.save') : t('profile.edit')}
             </button>
             {isEditing && (
               <button
@@ -212,7 +208,7 @@ export default function ProfilePage() {
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium flex items-center gap-2 transition-all"
               >
                 <X className="w-4 h-4" />
-                Cancel
+                {t('profile.cancel')}
               </button>
             )}
           </motion.div>
@@ -274,7 +270,7 @@ export default function ProfilePage() {
                         <span className="text-2xl">⚡</span>
                       </div>
                       <div>
-                        <h3 className="text-slate-400 text-sm font-medium">Available Credits</h3>
+                        <h3 className="text-slate-400 text-sm font-medium">{t('profile.credits.available')}</h3>
                         <div className="flex items-baseline gap-2">
                           <span className="text-3xl font-bold text-white tracking-tight">2,450</span>
                           <span className="text-sm text-slate-500">/ 5,000</span>
@@ -284,12 +280,12 @@ export default function ProfilePage() {
 
                     <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
                       <div className="hidden md:flex flex-col items-center px-4 border-l border-slate-800/50">
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Refill Date</span>
+                        <span className="text-xs text-slate-500 uppercase tracking-wider">{t('profile.credits.refill')}</span>
                         <span className="text-white font-medium">Feb 15, 2025</span>
                       </div>
                       
                       <button className="px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-lg font-medium text-sm transition-all shadow-lg shadow-sky-500/20">
-                        Add Credits
+                        {t('profile.credits.add')}
                       </button>
                     </div>
                   </div>
@@ -309,7 +305,7 @@ export default function ProfilePage() {
                   </div>
                   
                   <div className="flex justify-between text-xs text-slate-400 px-1 -mt-2">
-                    <span>Monthly Usage: 49%</span>
+                    <span>{t('profile.credits.usage')}: 49%</span>
                     <span>1,200 credits used this period</span>
                   </div>
                 </div>
@@ -323,7 +319,7 @@ export default function ProfilePage() {
             >
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-sky-400" />
-                About
+                {t('profile.about')}
               </h3>
               {isEditing ? (
                 <textarea
@@ -339,7 +335,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
                   <Mail className="w-5 h-5 text-slate-500" />
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Email</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{t('profile.email')}</p>
                     {isEditing ? (
                       <input
                         type="email"
@@ -355,7 +351,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
                   <LinkIcon className="w-5 h-5 text-slate-500" />
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Website</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{t('profile.website')}</p>
                     {isEditing ? (
                       <input
                         type="url"
@@ -371,14 +367,14 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
                   <Calendar className="w-5 h-5 text-slate-500" />
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Member Since</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{t('profile.memberSince')}</p>
                     <p className="text-slate-300 text-sm">{new Date(userStats.memberSince).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
                   <Clock className="w-5 h-5 text-slate-500" />
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Last Active</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{t('profile.lastActive')}</p>
                     <p className="text-slate-300 text-sm">{userStats.lastActive}</p>
                   </div>
                 </div>
@@ -394,12 +390,12 @@ export default function ProfilePage() {
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <span className="px-3 py-1 bg-sky-500/20 text-sky-400 text-xs font-semibold rounded-full uppercase tracking-wider">
-                    Current Plan
+                    {t('profile.plan.current')}
                   </span>
                   <Shield className="w-5 h-5 text-sky-400" />
                 </div>
                 <h4 className="text-2xl font-bold text-white mb-1">{userStats.plan}</h4>
-                <p className="text-slate-400 text-sm mb-6">Renews on {new Date(userStats.planExpiry).toLocaleDateString()}</p>
+                <p className="text-slate-400 text-sm mb-6">{t('profile.plan.renews')} {new Date(userStats.planExpiry).toLocaleDateString()}</p>
                 
                 <div className="space-y-3 mb-6">
                   {["Unlimited analyses", "Priority processing", "API access", "Advanced reporting"].map((feature, i) => (
@@ -411,7 +407,7 @@ export default function ProfilePage() {
                 </div>
 
                 <button className="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl font-medium transition-all shadow-lg shadow-sky-500/25">
-                  Upgrade Plan
+                  {t('profile.plan.upgrade')}
                 </button>
               </div>
             </motion.div>
@@ -427,7 +423,7 @@ export default function ProfilePage() {
             className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl overflow-hidden"
           >
             <div className="p-6 border-b border-slate-800/50">
-              <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+              <h3 className="text-lg font-semibold text-white">{t('dashboard.recentActivity')}</h3>
             </div>
             <div className="divide-y divide-slate-800/50">
               {recentActivity.map((activity, index) => (
@@ -555,22 +551,22 @@ export default function ProfilePage() {
               <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
                 <Trash2 className="w-6 h-6 text-rose-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Delete Account?</h3>
+              <h3 className="text-xl font-bold text-white mb-2">{t('profile.delete.title')}</h3>
               <p className="text-slate-400 mb-6">
-                This action cannot be undone. All your data, analyses, and cases will be permanently deleted.
+                {t('profile.delete.desc')}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-all"
                 >
-                  Cancel
+                  {t('profile.cancel')}
                 </button>
                 <button
                   onClick={() => {/* Handle delete */}}
                   className="flex-1 py-2.5 bg-rose-500 hover:bg-rose-400 text-white rounded-xl font-medium transition-all"
                 >
-                  Delete
+                  {t('profile.delete.confirm')}
                 </button>
               </div>
             </motion.div>

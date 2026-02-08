@@ -21,8 +21,11 @@ import {
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { format } from "date-fns";
+import LanguageSelector from "@/components/common/LanguageSelector";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardHeader() {
+  const { t } = useLanguage();
   const { data: session } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -54,7 +57,7 @@ export default function DashboardHeader() {
           <input
             type="text"
             className="block w-full pl-10 pr-20 py-2.5 border border-slate-700 rounded-xl leading-5 bg-slate-800/50 text-slate-100 placeholder-slate-400 focus:outline-none focus:bg-slate-800 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 transition-all sm:text-sm"
-            placeholder="Search cases, analyses, or forensic reports..."
+            placeholder={t('header.searchPlaceholder')}
             onClick={() => setSearchOpen(true)}
           />
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -68,22 +71,10 @@ export default function DashboardHeader() {
 
       {/* Right Actions */}
       <div className="flex items-center gap-3 sm:gap-4 ml-4">
-        {/* New Analysis Button */}
-        <Link
-          href="/dashboard/analyze"
-          className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl font-medium text-sm hover:from-sky-400 hover:to-indigo-500 transition-all shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Analysis</span>
-        </Link>
-
-        {/* Mobile Add Button */}
-        <Link
-          href="/dashboard/analyze"
-          className="sm:hidden flex items-center justify-center w-10 h-10 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl hover:from-sky-400 hover:to-indigo-500 transition-all shadow-lg shadow-sky-500/25"
-        >
-          <Plus className="w-5 h-5" />
-        </Link>
+        {/* Language Selector (Replaces New Analysis) */}
+        <LanguageSelector />
+        
+        {/* Mobile translation: Language Selector handles mobile responsive layout internally if needed, or we just show it */}
 
         {/* Notifications */}
         <div className="relative">
@@ -114,13 +105,13 @@ export default function DashboardHeader() {
                   className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50"
                 >
                   <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-                    <h3 className="font-semibold text-white">Notifications</h3>
+                    <h3 className="font-semibold text-white">{t('header.notifications')}</h3>
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllRead}
                         className="text-xs text-sky-400 hover:text-sky-300 transition-colors"
                       >
-                        Mark all read
+                        {t('header.markAllRead')}
                       </button>
                     )}
                   </div>
@@ -163,7 +154,7 @@ export default function DashboardHeader() {
                       href="/dashboard/notifications"
                       className="block text-center text-sm text-sky-400 hover:text-sky-300 transition-colors py-1"
                     >
-                      View all notifications
+                      {t('header.viewAll')}
                     </Link>
                   </div>
                 </motion.div>
@@ -220,7 +211,7 @@ export default function DashboardHeader() {
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group"
                     >
                       <User className="w-4 h-4 text-slate-400 group-hover:text-sky-400" />
-                      <span className="text-sm font-medium">Profile</span>
+                      <span className="text-sm font-medium">{t('nav.profile')}</span>
                     </Link>
 
                   </div>
@@ -230,7 +221,7 @@ export default function DashboardHeader() {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all group"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span className="text-sm font-medium">Sign Out</span>
+                      <span className="text-sm font-medium">{t('nav.logout')}</span>
                     </button>
                   </div>
                 </motion.div>

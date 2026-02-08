@@ -5,8 +5,10 @@ import { motion } from "framer-motion";
 import NewsFeed from "@/components/news/NewsFeed";
 import ScanHistory from "@/components/dashboard/ScanHistory";
 import { Newspaper, TrendingUp, Shield, Zap, CheckCircle2, Activity } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
       {/* Header Section */}
@@ -18,10 +20,10 @@ export default function DashboardPage() {
         >
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">
-              Dashboard
+              {t('dashboard.title')}
             </h1>
             <p className="text-slate-400 max-w-2xl text-lg">
-              Real-time intelligence on cybercrime, deepfakes, and AI security threats.
+              {t('dashboard.subtitle')}
             </p>
           </div>
           
@@ -30,7 +32,7 @@ export default function DashboardPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
-            System Online
+            {t('header.systemOnline')}
           </div>
         </motion.div>
 
@@ -44,7 +46,7 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/10 to-transparent p-5 hover:border-rose-500/40 transition-all group">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-rose-300/80 mb-1">Cybercrime Cases</p>
+                <p className="text-sm font-medium text-rose-300/80 mb-1">{t('dashboard.stats.cybercrime')}</p>
                 <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">2,847</p>
               </div>
               <div className="p-2.5 bg-rose-500/20 rounded-xl">
@@ -60,7 +62,7 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-transparent p-5 hover:border-purple-500/40 transition-all group">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-300/80 mb-1">Deepfake Cases</p>
+                <p className="text-sm font-medium text-purple-300/80 mb-1">{t('dashboard.stats.deepfake')}</p>
                 <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">1,523</p>
               </div>
               <div className="p-2.5 bg-purple-500/20 rounded-xl">
@@ -76,7 +78,7 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent p-5 hover:border-amber-500/40 transition-all group">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-amber-300/80 mb-1">AI Fraud</p>
+                <p className="text-sm font-medium text-amber-300/80 mb-1">{t('dashboard.stats.aiFraud')}</p>
                 <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">892</p>
               </div>
               <div className="p-2.5 bg-amber-500/20 rounded-xl">
@@ -92,7 +94,7 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-transparent p-5 hover:border-emerald-500/40 transition-all group">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-emerald-300/80 mb-1">Arrests Made</p>
+                <p className="text-sm font-medium text-emerald-300/80 mb-1">{t('dashboard.stats.arrests')}</p>
                 <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">456</p>
               </div>
               <div className="p-2.5 bg-emerald-500/20 rounded-xl">
@@ -127,7 +129,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-sky-400" />
-            Recent Activity
+            {t('dashboard.recentActivity')}
           </h2>
         </div>
         <div className="bg-slate-950/50 rounded-2xl border border-slate-800/50 p-6 backdrop-blur-sm">

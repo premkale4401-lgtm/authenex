@@ -153,7 +153,10 @@ const typeFilters = [
   { id: "document", label: "Documents" },
 ];
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function CasesPage() {
+  const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
@@ -225,8 +228,8 @@ export default function CasesPage() {
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Case Management</h1>
-          <p className="text-slate-400 mt-1">Manage and review all forensic analyses</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">{t('cases.title')}</h1>
+          <p className="text-slate-400 mt-1">{t('cases.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -234,7 +237,7 @@ export default function CasesPage() {
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl font-medium hover:from-sky-400 hover:to-indigo-500 transition-all shadow-lg shadow-sky-500/25"
           >
             <Shield className="w-4 h-4" />
-            <span>New Analysis</span>
+            <span>{t('nav.newAnalysis')}</span>
           </Link>
         </div>
       </div>
@@ -253,7 +256,7 @@ export default function CasesPage() {
           >
             <p className="text-2xl font-bold text-white">{filter.count}</p>
             <p className={`text-sm ${selectedStatus === filter.id ? "text-sky-400" : "text-slate-400"}`}>
-              {filter.label}
+              {t(`cases.filters.${filter.id}`)}
             </p>
           </button>
         ))}
@@ -266,7 +269,7 @@ export default function CasesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search cases by ID, title, or tags..."
+            placeholder={t('cases.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 transition-all"
@@ -291,7 +294,7 @@ export default function CasesPage() {
             className="px-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-sky-500/50"
           >
             {typeFilters.map(type => (
-              <option key={type.id} value={type.id}>{type.label}</option>
+              <option key={type.id} value={type.id}>{type.id === 'all' ? t('cases.filters.all') : t(`analyze.types.${type.id}`)}</option>
             ))}
           </select>
 
@@ -365,29 +368,29 @@ export default function CasesPage() {
                         className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-sky-500/20"
                       />
                     </th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Case</th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Type</th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.case')}</th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.type')}</th>
                     <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       <button 
                         onClick={() => setSortBy({ field: "date", order: sortBy.order === "asc" ? "desc" : "asc" })}
                         className="flex items-center gap-1 hover:text-white transition-colors"
                       >
-                        Date
+                        {t('cases.table.date')}
                         <ArrowUpDown className="w-3 h-3" />
                       </button>
                     </th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Result</th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.status')}</th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.result')}</th>
                     <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       <button 
                         onClick={() => setSortBy({ field: "confidence", order: sortBy.order === "asc" ? "desc" : "asc" })}
                         className="flex items-center gap-1 hover:text-white transition-colors"
                       >
-                        Confidence
+                        {t('cases.table.confidence')}
                         <ArrowUpDown className="w-3 h-3" />
                       </button>
                     </th>
-                    <th className="py-4 px-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                    <th className="py-4 px-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -427,7 +430,7 @@ export default function CasesPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="capitalize text-sm text-slate-300">{caseItem.type}</span>
+                        <span className="capitalize text-sm text-slate-300">{t(`analyze.types.${caseItem.type}`)}</span>
                       </td>
                       <td className="py-4 px-4">
                         <div className="text-sm text-slate-300">{caseItem.date}</div>
@@ -436,14 +439,14 @@ export default function CasesPage() {
                       <td className="py-4 px-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(caseItem.status)}`}>
                           {caseItem.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                          {caseItem.status.charAt(0).toUpperCase() + caseItem.status.slice(1)}
+                          {t(`cases.filters.${caseItem.status}`)}
                         </span>
                       </td>
                       <td className="py-4 px-4">
                         {caseItem.result ? (
                           <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${getResultColor(caseItem.result)}`}>
                             {caseItem.result === "authentic" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                            {caseItem.result.charAt(0).toUpperCase() + caseItem.result.slice(1)}
+                            {caseItem.result === "authentic" ? t('analyze.results.authentic') : t('analyze.results.aiGenerated')}
                           </span>
                         ) : (
                           <span className="text-slate-500 text-sm">-</span>
@@ -486,8 +489,8 @@ export default function CasesPage() {
             {filteredCases.length === 0 && (
               <div className="p-12 text-center">
                 <FolderOpen className="w-12 h-12 mx-auto text-slate-600 mb-4" />
-                <h3 className="text-lg font-medium text-white mb-2">No cases found</h3>
-                <p className="text-slate-400">Try adjusting your filters or search query</p>
+                <h3 className="text-lg font-medium text-white mb-2">{t('cases.noCases')}</h3>
+                <p className="text-slate-400">{t('cases.subtitle')}</p>
               </div>
             )}
           </motion.div>
@@ -512,7 +515,7 @@ export default function CasesPage() {
                     </div>
                     <div>
                       <p className="font-mono text-xs text-sky-400">{caseItem.id}</p>
-                      <p className="text-sm text-slate-500 capitalize">{caseItem.type}</p>
+                      <p className="text-sm text-slate-500 capitalize">{t(`analyze.types.${caseItem.type}`)}</p>
                     </div>
                   </div>
                   <input
@@ -535,26 +538,26 @@ export default function CasesPage() {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Status</span>
+                    <span className="text-slate-500">{t('cases.table.status')}</span>
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(caseItem.status)}`}>
                       {caseItem.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {caseItem.status}
+                      {t(`cases.filters.${caseItem.status}`)}
                     </span>
                   </div>
                   
                   {caseItem.result && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Result</span>
+                      <span className="text-slate-500">{t('cases.table.result')}</span>
                       <span className={`flex items-center gap-1 ${getResultColor(caseItem.result)}`}>
                         {caseItem.result === "authentic" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                        {caseItem.result}
+                        {caseItem.result === "authentic" ? t('analyze.results.authentic') : t('analyze.results.aiGenerated')}
                       </span>
                     </div>
                   )}
 
                   {caseItem.confidence && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Confidence</span>
+                      <span className="text-slate-500">{t('cases.table.confidence')}</span>
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
                           <div 

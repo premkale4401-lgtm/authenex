@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAnalysis } from "@/context/AnalysisContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface Message {
   role: "user" | "model";
@@ -16,6 +17,7 @@ interface Message {
 }
 
 export default function AuthenexChatWidget() {
+  const { t } = useLanguage();
   const { currentAnalysis } = useAnalysis();
   const [isOpen, setIsOpen] = useState(false);
   const [contextActive, setContextActive] = useState(false);
@@ -192,7 +194,7 @@ export default function AuthenexChatWidget() {
 
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages((prev) => [...prev, { role: "model", text: "Connection error. Please try again." }]);
+      setMessages((prev) => [...prev, { role: "model", text: t('chat.connectionError') }]);
     } finally {
       setIsLoading(false);
     }
@@ -219,16 +221,16 @@ export default function AuthenexChatWidget() {
                 </div>
                  <div>
                    <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
-                      Authenex AI
+                      {t('chat.title')}
                       {contextActive && (
                         <span className="flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/30">
-                           <Activity className="w-3 h-3" /> Linked
+                           <Activity className="w-3 h-3" /> {t('chat.linked')}
                         </span>
                       )}
                    </h3>
                    <p className="text-xs text-slate-400 flex items-center gap-1">
                      <ShieldCheck className="w-3 h-3 text-sky-500" />
-                     Forensic Intelligence
+                     {t('chat.subtitle')}
                    </p>
                  </div>
               </div>
@@ -242,9 +244,8 @@ export default function AuthenexChatWidget() {
                {messages.length === 0 && (
                  <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-60">
                     <ShieldCheck className="w-12 h-12 text-slate-600 mb-3" />
-                    <p className="text-slate-400 text-sm">
-                      Authenex AI Core Initialized.<br/>
-                      Ready for forensic analysis.
+                    <p className="text-slate-400 text-sm whitespace-pre-line">
+                      {t('chat.welcome')}
                     </p>
                  </div>
                )}
@@ -296,7 +297,7 @@ export default function AuthenexChatWidget() {
                      value={input}
                      onChange={(e) => setInput(e.target.value)}
                      onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                     placeholder={isListening ? "Listening..." : "Ask Authenex AI..."}
+                     placeholder={isListening ? t('chat.listening') : t('chat.placeholder')}
                      disabled={isListening}
                      className={cn(
                        "flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder:text-slate-600 transition-all",
@@ -314,7 +315,7 @@ export default function AuthenexChatWidget() {
                  
                  {isListening && (
                     <p className="text-[10px] text-center mt-2 text-red-400 animate-pulse font-medium">
-                       Listening to your voice...
+                       {t('chat.listening')}
                     </p>
                  )}
             </div>

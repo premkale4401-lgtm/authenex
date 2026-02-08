@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Upload, 
@@ -24,24 +25,27 @@ import {
 import { useDropzone } from "react-dropzone";
 import { analyzeImage, analyzeVideo, analyzeAudio, analyzeDocument } from "@/lib/api";
 import { useAnalysis } from "@/context/AnalysisContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 const analysisTypes = [
-  { id: "image", label: "Image Forensics", icon: ImageIcon, desc: "Detect manipulation, deepfakes, and metadata analysis" },
-  { id: "video", label: "Video Analysis", icon: Video, desc: "Frame-by-frame verification and temporal consistency" },
-  { id: "document", label: "Document Check", icon: FileText, desc: "PDF integrity and digital signature verification" },
-  { id: "audio", label: "Audio Forensics", icon: Mic, desc: "Voice cloning detection and waveform analysis" },
-  { id: "email", label: "Email Verification", icon: Mail, desc: "Phishing detection and sender identity verification" },
-  { id: "text", label: "Text Detection", icon: MessageSquare, desc: "AI-generated text detection (LLM forensics)" },
+  { id: "image", icon: ImageIcon, desc: "Detect manipulation, deepfakes, and metadata analysis" },
+  { id: "video", icon: Video, desc: "Frame-by-frame verification and temporal consistency" },
+  { id: "document", icon: FileText, desc: "PDF integrity and digital signature verification" },
+  { id: "audio", icon: Mic, desc: "Voice cloning detection and waveform analysis" },
+  { id: "email", icon: Mail, desc: "Phishing detection and sender identity verification" },
+  { id: "text", icon: MessageSquare, desc: "AI-generated text detection (LLM forensics)" },
 ];
 
 const analysisSteps = [
-  { id: "upload", label: "Upload", icon: Upload },
-  { id: "scanning", label: "Scanning", icon: Scan },
-  { id: "ai-analysis", label: "AI Analysis", icon: Brain },
-  { id: "results", label: "Results", icon: FileSearch },
+  { id: "upload", icon: Upload },
+  { id: "scanning", icon: Scan },
+  { id: "ai-analysis", icon: Brain },
+  { id: "results", icon: FileSearch },
 ];
 
 export default function AnalyzePage() {
+  const { t } = useLanguage();
+  const router = useRouter();
   const [selectedType, setSelectedType] = useState("image");
   const [files, setFiles] = useState<File[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
@@ -119,19 +123,40 @@ export default function AnalyzePage() {
         // Backend returns: { trust_score, deepfake_probability, verdict, explanation, details: { findings: [], ...categoryScores } }
         
         // Map backend findings to UI findings
+        // Map backend findings to UI findings
         const findings = data.details?.findings || [];
-        const mappedFindings = findings.map((f: any) => ({
-             type: f.category || "General",
-             status: f.score > 80 ? "valid" : f.score > 50 ? "warning" : "danger",
-             detail: f.reason || "Analysis complete"
+        
+        let mappedFindings = findings.map((f: any) => ({
+             type: f.category && f.category !== "General" ? f.category : 
+                   (f.reason?.includes("Visual") ? "Visual" : 
+                    f.reason?.includes("Face") ? "Facial Analysis" : 
+                    f.reason?.includes("Metadata") ? "Metadata" : "Anomaly Detection"),
+             status: f.score > 80 ? "critical" : f.score > 60 ? "warning" : "low",
+             detail: f.reason || "Analysis complete",
+             score: f.score || 85 // Ensure score exists
         }));
 
-        // Fallback findings if empty
+        // If no findings, generate from category scores
+        if (mappedFindings.length === 0 && data.details) {
+           Object.entries(data.details).forEach(([key, value]) => {
+              if (key !== 'findings' && typeof value === 'number' && value > 50) {
+                 mappedFindings.push({
+                    type: key.replace(/([A-Z])/g, ' $1').trim(), // Format camelCase
+                    status: value > 80 ? "critical" : value > 60 ? "warning" : "low",
+                    detail: `Elevated ${key} anomaly detected`,
+                    score: value
+                 });
+              }
+           });
+        }
+
+        // Fallback findings if still empty
         if (mappedFindings.length === 0) {
              mappedFindings.push({
-                 type: "Analysis Complete",
-                 status: data.confidence > 80 ? "valid" : data.confidence > 50 ? "warning" : "danger",
-                 detail: data.explanation || "Forensic analysis completed successfully"
+                 type: "Overall Integirty",
+                 status: data.confidence > 80 ? "valid" : "warning",
+                 detail: data.explanation || "No significant anomalies detected",
+                 score: Math.round(data.confidence)
              });
         }
 
@@ -145,26 +170,99 @@ export default function AnalyzePage() {
           });
         }
 
+        // Convert file to base64 for PDF embedding (with compression)
+        let filePreviewBase64 = undefined;
+        if (files[0] && (selectedType === 'image' || selectedType === 'video')) {
+          try {
+            if (selectedType === 'image') {
+              // Create a promise to handle image loading and compression
+              filePreviewBase64 = await new Promise<string>((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  // Max dimension 800px is sufficient for PDF report thumbnail
+                  const MAX_SIZE = 800;
+                  let width = img.width;
+                  let height = img.height;
+                  
+                  if (width > height) {
+                    if (width > MAX_SIZE) {
+                      height *= MAX_SIZE / width;
+                      width = MAX_SIZE;
+                    }
+                  } else {
+                    if (height > MAX_SIZE) {
+                      width *= MAX_SIZE / height;
+                      height = MAX_SIZE;
+                    }
+                  }
+                  
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx?.drawImage(img, 0, 0, width, height);
+                  
+                  // Compress to JPEG with 0.7 quality
+                  resolve(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = URL.createObjectURL(files[0]);
+              });
+            } else {
+               // For video, we might not be able to grab a frame easily without more complex logic
+               // Fallback to simple file read for small videos or placeholder
+               // A better approach for video would be to generate a thumbnail, but for now let's skip large video files
+               // to avoid breaking localStorage. 
+               // If file size is small (< 500KB), try to read it, otherwise skip
+               if (files[0].size < 500 * 1024) {
+                 const reader = new FileReader();
+                 filePreviewBase64 = await new Promise<string>((resolve) => {
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(files[0]);
+                 });
+               }
+            }
+          } catch (e) {
+            console.error('Failed to process file preview:', e);
+          }
+        }
+
         const uiResults = {
             authenticity: data.humanPercentage,
             aiPercentage: data.aiPercentage,
-            humanPercentage: data.humanPercentage, // Added missing field
-            modality: selectedType, // Added missing field
+            humanPercentage: data.humanPercentage,
+            modality: selectedType,
             verdict: data.verdict,
             explanation: data.explanation,
             manipulated: data.verdict === 'AI',
-            confidence: data.confidence, // Use number
-            confidenceLevel: data.confidence > 80 ? "High" : data.confidence > 50 ? "Medium" : "Low", // New field for UI
+            confidence: data.confidence,
+            confidenceLevel: data.confidence > 80 ? "High" : data.confidence > 50 ? "Medium" : "Low",
             categoryScores: categoryScores,
-            findings: mappedFindings
+            findings: mappedFindings,
+            detectionLayers: (data.detectionLayers || data.details?.detectionLayers || []).length > 0 
+              ? (data.detectionLayers || data.details?.detectionLayers)
+              : mappedFindings.map((f: any) => ({
+                  category: f.type,
+                  name: f.type,
+                  score: f.score,
+                  weight: 0.2,
+                  status: f.status === 'critical' ? 'fail' : f.status === 'warning' ? 'warning' : 'pass',
+                  findings: [f.detail],
+                  technicalDetails: f.detail
+                })),
+            metadata: data.metadata || data.details?.metadata || {},
+            details: data.details || {},
+            heatmapData: data.heatmapData || data.details?.heatmapData || null,
+            filePreview: filePreviewBase64
         };
+
+        console.log("Setting analysis result with preview length:", filePreviewBase64 ? filePreviewBase64.length : 0);
 
         // Update global context for chatbot
         setAnalysis(uiResults);
 
         setCurrentStep(3);
         await new Promise(resolve => setTimeout(resolve, 500));
-        setResults(uiResults);
+        router.push("/dashboard/analyze/result");
       }
       
     } catch (error) {
@@ -182,8 +280,8 @@ export default function AnalyzePage() {
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-white">New Forensic Analysis</h1>
-        <p className="text-slate-400">Select content type and upload files for verification</p>
+        <h1 className="text-3xl font-bold text-white">{t('analyze.title')}</h1>
+        <p className="text-slate-400">{t('analyze.subtitle')}</p>
       </div>
 
       {/* Analysis Type Selection */}
@@ -204,7 +302,7 @@ export default function AnalyzePage() {
               <type.icon className="w-6 h-6" />
             </div>
             <h3 className={`font-semibold mb-1 ${selectedType === type.id ? "text-white" : "text-slate-300"}`}>
-              {type.label}
+              {t(`analyze.types.${type.id}`)}
             </h3>
             <p className="text-sm text-slate-400">{type.desc}</p>
             
@@ -222,8 +320,10 @@ export default function AnalyzePage() {
 
       {/* Upload Area */}
       <AnimatePresence mode="wait">
-        {!results && (
+
+        {!isAnalyzing && !results && (
           <motion.div
+            key="upload-area"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -242,11 +342,11 @@ export default function AnalyzePage() {
                 <Upload className={`w-10 h-10 ${isDragActive ? "text-sky-400" : "text-slate-400"}`} />
               </div>
               <p className="text-lg font-medium text-white mb-2">
-                {isDragActive ? "Drop files here" : "Drag & drop files here"}
+                {isDragActive ? t('analyze.dropzone.dragActive') : t('analyze.dropzone.dragDrop')}
               </p>
-              <p className="text-sm text-slate-400 mb-4">or click to browse from your computer</p>
+              <p className="text-sm text-slate-400 mb-4">{t('analyze.dropzone.browse')}</p>
               <button className="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors">
-                Select Files
+                {t('analyze.dropzone.selectFiles')}
               </button>
             </div>
 
@@ -257,7 +357,7 @@ export default function AnalyzePage() {
                 animate={{ opacity: 1, height: "auto" }}
                 className="space-y-3"
               >
-                <h4 className="text-sm font-medium text-slate-300">Selected Files ({files.length})</h4>
+                <h4 className="text-sm font-medium text-slate-300">{t('analyze.dropzone.selectedFiles')} ({files.length})</h4>
                 <div className="space-y-2">
                   {files.map((file, index) => (
                     <motion.div
@@ -298,11 +398,11 @@ export default function AnalyzePage() {
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Analyzing...
+                      {t('analyze.button.analyzing')}
                     </>
                   ) : (
                     <>
-                      Start Analysis
+                      {t('analyze.button.start')}
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
@@ -311,161 +411,64 @@ export default function AnalyzePage() {
             )}
           </motion.div>
         )}
+
+        {/* Analysis Progress - Scanning Animation */}
+        {isAnalyzing && (
+          <motion.div
+            key="scanning-animation"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative max-w-3xl mx-auto aspect-video bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl shadow-sky-500/10"
+          >
+           {/* Content Preview */}
+           <div className="absolute inset-0 flex items-center justify-center bg-slate-950">
+             {files.length > 0 && selectedType === 'image' ? (
+               // eslint-disable-next-line @next/next/no-img-element
+               <img 
+                 src={URL.createObjectURL(files[0])} 
+                 alt="Scanning..." 
+                 className="w-full h-full object-contain opacity-50"
+               />
+             ) : (
+               <div className="flex flex-col items-center gap-4 text-slate-600">
+                 <FileSearch className="w-16 h-16" />
+                 <p>Analyzing Content...</p>
+               </div>
+             )}
+           </div>
+ 
+           {/* Grid Overlay */}
+           <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.1)_1px,transparent_1px)] bg-[size:40px_40px]" />
+ 
+           {/* Scanning Beam */}
+           <motion.div
+             className="absolute inset-x-0 h-1 bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.8)] z-10"
+             animate={{ top: ["0%", "100%", "0%"] }}
+             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+           />
+ 
+           {/* Scanning Text */}
+           <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+             <div className="flex items-center gap-3 px-4 py-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg">
+               <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+               <span className="text-cyan-400 font-mono text-sm">
+                 {currentStep === 1 ? "INITIALIZING..." : 
+                  currentStep === 2 ? "SCANNING LAYERS..." : 
+                  "ANALYZING FEATURES..."}
+               </span>
+             </div>
+             <div className="px-4 py-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg">
+               <span className="text-slate-400 font-mono text-sm">
+                 ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
+               </span>
+             </div>
+           </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {/* Analysis Progress */}
-      {isAnalyzing && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-8 bg-slate-900/50 border border-slate-800 rounded-2xl text-center space-y-6"
-        >
-          <div className="flex justify-center gap-2">
-            {analysisSteps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex flex-col items-center gap-2 ${
-                  index <= currentStep ? "text-sky-400" : "text-slate-600"
-                }`}>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${
-                    index < currentStep ? "bg-sky-500 border-sky-500 text-white" :
-                    index === currentStep ? "border-sky-500 text-sky-400 animate-pulse" :
-                    "border-slate-700 text-slate-600"
-                  }`}>
-                    {index < currentStep ? <CheckCircle2 className="w-6 h-6" /> : <step.icon className="w-6 h-6" />}
-                  </div>
-                  <span className="text-xs font-medium">{step.label}</span>
-                </div>
-                {index < analysisSteps.length - 1 && (
-                  <div className={`w-12 h-0.5 mx-2 ${
-                    index < currentStep ? "bg-sky-500" : "bg-slate-800"
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-slate-400">Processing forensic analysis... Please wait</p>
-        </motion.div>
-      )}
-
       {/* Results */}
-      {results && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Authenticity vs AI Percentage Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Authenticity Card */}
-            <div className="p-8 bg-gradient-to-br from-emerald-500/10 to-sky-500/10 border border-emerald-500/20 rounded-2xl text-center">
-              <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-emerald-500/20 border-4 border-emerald-500 flex items-center justify-center">
-                <span className="text-3xl font-bold text-emerald-400">{results.authenticity}%</span>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-1">Authentic Content</h3>
-              <p className="text-emerald-400 font-medium">{results.confidence} Confidence</p>
-            </div>
-
-            {/* AI Generated Card */}
-            <div className="p-8 bg-gradient-to-br from-rose-500/10 to-orange-500/10 border border-rose-500/20 rounded-2xl text-center">
-              <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-rose-500/20 border-4 border-rose-500 flex items-center justify-center">
-                <span className="text-3xl font-bold text-rose-400">{results.aiPercentage}%</span>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-1">AI Generated</h3>
-              <p className="text-rose-400 font-medium">Deepfake Probability</p>
-            </div>
-          </div>
-
-          {/* Verdict Badge */}
-          <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl text-center">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-sky-500/10 border border-sky-500/30 rounded-full">
-              <Shield className="w-5 h-5 text-sky-400" />
-              <span className="text-lg font-bold text-sky-300">Verdict: {results.verdict}</span>
-            </div>
-            {results.explanation && (
-              <p className="mt-4 text-slate-300 max-w-2xl mx-auto">{results.explanation}</p>
-            )}
-          </div>
-
-          {/* Category Scores (if available) */}
-          {results.categoryScores && Object.keys(results.categoryScores).length > 0 && (
-            <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-purple-400" />
-                Forensic Analysis Breakdown
-              </h3>
-              <div className="space-y-3">
-                {Object.entries(results.categoryScores).map(([category, score]: [string, any]) => (
-                  <div key={category}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-300 capitalize">{category}</span>
-                      <span className="text-slate-400">{score}/100</span>
-                    </div>
-                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-sky-500 to-purple-500 rounded-full transition-all"
-                        style={{ width: `${score}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Detailed Findings */}
-          <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <FileSearch className="w-5 h-5 text-amber-400" />
-              Detailed Findings
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {results.findings.map((finding: any, index: number) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-xl border ${
-                    finding.status === 'valid' ? 'bg-emerald-500/5 border-emerald-500/20' :
-                    finding.status === 'warning' ? 'bg-amber-500/5 border-amber-500/20' :
-                    'bg-rose-500/5 border-rose-500/20'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 ${
-                      finding.status === 'valid' ? 'text-emerald-400' :
-                      finding.status === 'warning' ? 'text-amber-400' :
-                      'text-rose-400'
-                    }`}>
-                      {finding.status === 'valid' ? <CheckCircle2 className="w-5 h-5" /> :
-                       finding.status === 'warning' ? <AlertCircle className="w-5 h-5" /> :
-                       <Shield className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-white">{finding.type}</h4>
-                      <p className="text-sm text-slate-400">{finding.detail}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <button
-              onClick={() => {
-                setResults(null);
-                setFiles([]);
-                setCurrentStep(0);
-              }}
-              className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors"
-            >
-              New Analysis
-            </button>
-            <button className="flex-1 py-3 bg-sky-500 text-white rounded-xl font-medium hover:bg-sky-400 transition-colors">
-              Download Report
-            </button>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }

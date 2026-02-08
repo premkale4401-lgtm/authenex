@@ -11,6 +11,19 @@ interface AnalysisResult {
     findings: any[];
     explanation: string;
     modality: string;
+    categoryScores?: Record<string, number>;
+    detectionLayers?: Array<{
+        name: string;
+        score: number;
+        weight: number;
+        status: string;
+        details: string[];
+    }>;
+    metadata?: {
+        potentialModel?: string;
+        artifactsDetected?: string[];
+    };
+    details?: any;
 }
 
 interface AnalysisContextType {
