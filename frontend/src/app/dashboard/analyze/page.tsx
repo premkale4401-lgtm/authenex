@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { analyzeImage, analyzeVideo, analyzeAudio, analyzeDocument } from "@/lib/api";
+import { useAnalysis } from "@/context/AnalysisContext";
 
 const analysisTypes = [
   { id: "image", label: "Image Forensics", icon: ImageIcon, desc: "Detect manipulation, deepfakes, and metadata analysis" },
@@ -46,6 +47,7 @@ export default function AnalyzePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const { setAnalysis } = useAnalysis();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -146,13 +148,19 @@ export default function AnalyzePage() {
         const uiResults = {
             authenticity: data.humanPercentage,
             aiPercentage: data.aiPercentage,
+            humanPercentage: data.humanPercentage, // Added missing field
+            modality: selectedType, // Added missing field
             verdict: data.verdict,
             explanation: data.explanation,
             manipulated: data.verdict === 'AI',
-            confidence: data.confidence > 80 ? "High" : data.confidence > 50 ? "Medium" : "Low",
+            confidence: data.confidence, // Use number
+            confidenceLevel: data.confidence > 80 ? "High" : data.confidence > 50 ? "Medium" : "Low", // New field for UI
             categoryScores: categoryScores,
             findings: mappedFindings
         };
+
+        // Update global context for chatbot
+        setAnalysis(uiResults);
 
         setCurrentStep(3);
         await new Promise(resolve => setTimeout(resolve, 500));

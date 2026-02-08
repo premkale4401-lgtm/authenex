@@ -17,7 +17,7 @@ export default function ScanHistory() {
       try {
         // Fetch from backend via API
         const history = await import("@/lib/api").then(mod => mod.getScanHistory());
-        setScans(history);
+        setScans(history.slice(0, 5));
       } catch (error) {
         console.error("Error fetching history:", error);
       } finally {

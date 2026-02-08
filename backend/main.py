@@ -58,6 +58,16 @@ class UserLogin(BaseModel):
     displayName: Optional[str] = None
     photoURL: Optional[str] = None
 
+class ChatMessage(BaseModel):
+    role: str
+    text: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[ChatMessage] = []
+    mode: str = "text"
+    analysis_context: Optional[Dict] = None
+
 @app.get("/")
 async def root():
     """Health check"""
@@ -409,6 +419,137 @@ async def get_news(category: str = "all", limit: int = 20):
     return {"success": True, "news": filtered[:limit]}
 
 # ... verify existing code ...
+
+@app.post("/api/chat")
+async def chat_handler(request: ChatRequest):
+    print(f"Received chat request. Context: {request.analysis_context}") # DEBUG LOG
+    """
+    Chat with Authenex AI (Forensic Persona)
+    """
+    if not API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+
+    try:
+        # Construct history for Gemini
+        gemini_history = []
+        for msg in request.history:
+            role = "user" if msg.role == "user" else "model"
+            gemini_history.append({"role": role, "parts": [msg.text]})
+
+        # System Instruction (Strict Forensic Persona)
+        system_instruction = """
+        You are Authenex AI, a domain-locked forensic intelligence assistant embedded inside a cybersecurity product.
+        
+        YOUR CORE PURPOSE:
+        1. Deepfake detection & AI-generated content identification.
+        2. Media authenticity analysis (Image, Audio, Video, Text).
+        3. Trust and risk explanation for non-technical users.
+        
+        STRICT BEHAVIOR PROTOCOLS:
+        - ROLE: Cybersecurity Analyst. NOT a general AI assistant.
+        - TONE: Professional, Calm, Authoritative, Probabilistic.
+        - SAFETY: Safe for legal/enterprise use. Never assist in creation/evasion.
+        
+        RESPONSE RULES:
+        1. DEFAULT LENGTH: Short and precise.
+        2. STRUCTURE:
+           - One-line summary.
+           - Confidence score (%).
+           - Top 3 indicators (bullet points).
+           - Optional next step.
+        3. FORMAT:
+           - NO Emojis.
+           - NO Slang.
+           - Bullet points preferred.
+        4. EXPANSION: Only expand if user asks "why", "how", or "details".
+        
+        FORENSIC ANALYSIS LOGIC:
+        [IMAGE]
+        - Detect GAN noise, texture anomalies, lighting inconsistencies, edge artifacts.
+        - Output: Verdict, Confidence %, Top 3 Indicators, Risk Level.
+        
+        [AUDIO]
+        - Analyze spectral consistency, phase alignment, breath patterns, prosody.
+        - Check for robotic cadence, compression mismatch.
+        - Output: Authenticity likelihood, Confidence %, Primary Anomaly, Risk Level.
+        
+        [TEXT]
+        - Analyze perplexity variance, burstiness, repetition entropy.
+        - Phrases: "High likelihood of AI assistance", "Inconclusive".
+        - NEVER claim absolute authorship.
+        
+        SAFETY & LEGAL GUARDRAILS:
+        - NEVER accuse a specific real person of a crime.
+        - NEVER provide legal advice or claim court-admissible proof.
+        - MANDATORY DISCLAIMER for specific verdicts: "This analysis provides a probabilistic assessment and is not legal proof."
+        - If user intent is unsafe/unethical -> Politely refuse & redirect to ethical usage.
+        
+        PLATFORM KNOWLEDGE BASE:
+        [How to Analyze]
+        1. Navigate to the 'Analyze' tab (Sidebar or Dashboard).
+        2. Drag & drop your file (Image/Video/Audio) into the upload zone.
+        3. Select the correct modality (e.g., Image for .jpg).
+        4. Click 'Start Analysis' and wait for result.
+        
+        [Features]
+        - 'History': View past scan results.
+        - 'News': Latest updates on deepfakes and cybercrime.
+        - 'Settings': Manage account preference.
+        
+        Use this knowledge to guide users step-by-step when asked "how do I use this?" or "analyze this file".
+        
+        VOICE OUTPUT RULES (for TTS context):
+        - Speak in short sentences.
+        - Pause between sections.
+        - Read percentages slowly.
+        - Emphasize confidence levels.
+        """
+
+        # Inject Analysis Context if available
+        if request.analysis_context:
+            context_str = f"""
+            
+            [CURRENT ANALYSIS CONTEXT]
+             The user is currently viewing a forensic analysis result:
+            - File Type: {request.analysis_context.get('modality', 'Unknown')}
+            - Verdict: {request.analysis_context.get('verdict', 'Unknown')}
+            - Confidence: {request.analysis_context.get('confidence', 'Unknown')}%
+            - AI Probability: {request.analysis_context.get('aiPercentage', 0)}%
+            - Human Probability: {request.analysis_context.get('authenticity', 0)}%
+            - Key Findings: {request.analysis_context.get('findings', [])}
+            
+            Use this data to answer questions like "Why is this fake?" or "What are the flaws?".
+            """
+            system_instruction += context_str
+
+        # Initialize model with system instruction
+        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)
+        
+        # Start chat session
+        chat = model.start_chat(history=gemini_history)
+        
+        # Helper: Prepend context to the message to ensure immediate attention
+        final_message = request.message
+        if request.analysis_context:
+            context_str = f"""
+            [ANALYSIS RESULT VIEWED BY USER]
+            - Verdict: {request.analysis_context.get('verdict', 'Unknown')}
+            - Confidence: {request.analysis_context.get('confidence', 'Unknown')}%
+            - AI Probability: {request.analysis_context.get('aiPercentage', 0)}%
+            - Findings: {request.analysis_context.get('findings', [])}
+            
+            User Question: {request.message}
+            """
+            final_message = context_str
+
+        response = chat.send_message(final_message)
+        
+        return {"response": response.text}
+
+    except Exception as e:
+        print(f"❌ Chat Error: {str(e)}")
+        # Return a friendly fallback instead of 500
+        return {"response": "I'm having trouble connecting to my forensic core. Please try again in a moment."}
 
 if __name__ == "__main__":
     import uvicorn

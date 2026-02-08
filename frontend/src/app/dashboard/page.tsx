@@ -107,11 +107,22 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Recent Scans Section */}
+      {/* News Feed - Now with full width container for better masonry */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
+        className="relative"
+      >
+        <div className="absolute -inset-4 bg-gradient-to-b from-sky-500/5 via-transparent to-transparent -z-10 blur-3xl opacity-20" />
+        <NewsFeed />
+      </motion.div>
+
+      {/* Recent Scans Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -122,17 +133,6 @@ export default function DashboardPage() {
         <div className="bg-slate-950/50 rounded-2xl border border-slate-800/50 p-6 backdrop-blur-sm">
            <ScanHistory />
         </div>
-      </motion.div>
-
-      {/* News Feed - Now with full width container for better masonry */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="relative"
-      >
-        <div className="absolute -inset-4 bg-gradient-to-b from-sky-500/5 via-transparent to-transparent -z-10 blur-3xl opacity-20" />
-        <NewsFeed />
       </motion.div>
     </div>
     
