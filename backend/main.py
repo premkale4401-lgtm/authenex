@@ -6,7 +6,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from PIL import Image
 import io
 import os
@@ -52,8 +53,22 @@ from auth import verify_token, require_role, get_current_user
 # SQLAlchemy session import
 from sqlalchemy.orm import Session
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    init_db()
+    print("✅ Database initialized")
+    yield
+    # Shutdown logic (none needed for now)
+
 # Initialize FastAPI
-app = FastAPI(title="Authenex AI Analysis API", version="1.0.0")
+app = FastAPI(
+    title="Authenex AI Analysis API", 
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # SECURITY: CORS Configuration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
@@ -76,11 +91,13 @@ app.add_middleware(
 
 # Configure Gemini
 API_KEY = os.getenv("GEMINI_API_KEY")
+client = None
+
 if not API_KEY:
     print("WARNING: GEMINI_API_KEY not found in .env file!")
 else:
-    genai.configure(api_key=API_KEY)
-    print("Gemini API configured")
+    client = genai.Client(api_key=API_KEY)
+    print("Gemini API (google-genai) configured")
 
 # Enhanced Pydantic models
 class ForensicAnalysisResult(BaseModel):
@@ -258,12 +275,6 @@ async def update_system_setting(
     return {"status": "success", "message": f"Setting '{setting.key}' updated"}
 
 
-# Initialize database on startup
-@app.on_event("startup")
-async def startup():
-    init_db()
-    print("✅ Database initialized")
-
 @app.get("/")
 async def root():
     """Health check"""
@@ -378,8 +389,8 @@ async def analyze_asset(
         - All uploads are attributed to authenticated users
     """
     uid = user["sub"]  # Extract uid from JWT sub claim (secure)
-    if not API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+    if not client:
+        raise HTTPException(status_code=500, detail="Gemini Client (google-genai) not configured")
     
     try:
         print(f"Received file: {file.filename} ({modality}) from user: {uid}")
@@ -470,16 +481,16 @@ async def analyze_asset(
              with open(temp_filename, "wb") as f:
                  f.write(contents)
                  
-             video_file = genai.upload_file(temp_filename)
+             video_file = client.files.upload(path=temp_filename)
              print(f"Video uploaded to Gemini: {video_file.name}")
              
-             while video_file.state.name == "PROCESSING":
+             while video_file.state == "PROCESSING":
                  print("Waiting for video processing...")
                  import time
                  time.sleep(2)
-                 video_file = genai.get_file(video_file.name)
+                 video_file = client.files.get(name=video_file.name)
 
-             if video_file.state.name == "FAILED":
+             if video_file.state == "FAILED":
                  raise ValueError("Video processing failed")
                  
              gemini_content.append(video_file)
@@ -514,7 +525,7 @@ async def analyze_asset(
              with open(temp_filename, "wb") as f:
                  f.write(contents)
              
-             audio_file = genai.upload_file(temp_filename)
+             audio_file = client.files.upload(path=temp_filename)
              gemini_content.append(audio_file)
              
              prompt = """Analyze this AUDIO for Voice Cloning or Synthetic TTS. 
@@ -562,11 +573,13 @@ async def analyze_asset(
             }"""
              gemini_content.append(prompt)
 
-        # Initialize Gemini model
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        print(f"Calling Gemini API ({model.model_name})...")
+        # Call Gemini API
+        print(f"Calling Gemini API (gemini-1.5-flash)...")
         
-        response = model.generate_content(gemini_content)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=gemini_content
+        )
         raw_text = response.text
         
         # Parse JSON response
