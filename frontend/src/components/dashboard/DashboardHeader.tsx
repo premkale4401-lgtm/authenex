@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
+  Menu,
   Search, 
   Bell, 
   Plus,
@@ -24,7 +25,11 @@ import { format } from "date-fns";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { useLanguage } from "@/context/LanguageContext";
 
-export default function DashboardHeader() {
+export default function DashboardHeader({
+  setMobileMenuOpen
+}: {
+  setMobileMenuOpen: (open: boolean) => void;
+}) {
   const { t } = useLanguage();
   const { data: session } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -48,6 +53,14 @@ export default function DashboardHeader() {
 
   return (
     <header className="h-20 bg-slate-900/50 backdrop-blur-xl border-b border-slate-800/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
+      {/* Mobile Menu Button */}
+      <button 
+        onClick={() => setMobileMenuOpen(true)}
+        className="lg:hidden mr-4 p-2 text-slate-400 hover:text-white transition-colors"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
       {/* Search Bar */}
       <div className="flex-1 max-w-2xl">
         <div className="relative group">

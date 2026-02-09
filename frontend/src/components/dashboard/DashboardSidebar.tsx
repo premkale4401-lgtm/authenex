@@ -39,10 +39,14 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardSidebar({ 
   collapsed, 
-  setCollapsed 
+  setCollapsed,
+  mobileMenuOpen,
+  setMobileMenuOpen
 }: { 
   collapsed: boolean; 
   setCollapsed: (collapsed: boolean) => void;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
 }) {
   const { t } = useLanguage();
   const pathname = usePathname();
@@ -50,12 +54,26 @@ export default function DashboardSidebar({
   return (
     <>
       {/* Mobile overlay */}
-      <div className="lg:hidden fixed inset-0 bg-black/50 z-40 hidden" id="mobile-overlay" />
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
       
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? 80 : 288 }}
-        className="fixed left-0 top-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 z-50 hidden lg:flex flex-col"
+        animate={{ 
+          width: collapsed ? 80 : 288,
+          x: typeof window !== 'undefined' && window.innerWidth < 1024 ? (mobileMenuOpen ? 0 : -288) : 0
+        }}
+        transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+        className="fixed left-0 top-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 z-50 flex flex-col lg:translate-x-0"
       >
         <div className="flex flex-col h-full w-full overflow-hidden">
           {/* Logo */}
@@ -87,6 +105,7 @@ export default function DashboardSidebar({
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${
                     isActive 
                       ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" 
@@ -122,6 +141,7 @@ export default function DashboardSidebar({
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all group"
                 >
                   <Icon className="w-5 h-5 flex-shrink-0 group-hover:text-sky-400 transition-colors" />

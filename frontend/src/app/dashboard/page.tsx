@@ -10,7 +10,7 @@ import { useLanguage } from "@/context/LanguageContext";
 export default function DashboardPage() {
   const { t } = useLanguage();
   return (
-    <div className="space-y-8 pb-20 lg:pb-0">
+    <div className="space-y-8 pb-40 lg:pb-0">
       {/* Header Section */}
       <div className="flex flex-col gap-6">
         <motion.div

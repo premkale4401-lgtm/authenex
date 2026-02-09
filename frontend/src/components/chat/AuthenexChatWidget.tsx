@@ -119,18 +119,19 @@ export default function AuthenexChatWidget() {
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
 
-    // Select Indian Voice (Prefer Female/Pleasant)
-    // Common Indian voices (Heera, etc.) are usually female and pleasant by default
+    // Select Indian Voice (Prefer Male/Clear)
+    // Priority: Microsoft Mark (Indian English) > Google English (India) > Any en-IN > Any Male English
     const voices = window.speechSynthesis.getVoices();
-    const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang.includes('en-IN')) 
+    const indianVoice = voices.find(v => v.name.includes("Microsoft Mark")) 
+                     || voices.find(v => v.lang === 'en-IN' || v.lang.includes('en-IN'))
                      || voices.find(v => v.name.includes('India') || v.name.includes('Hindi'));
 
     if (indianVoice) {
         utterance.voice = indianVoice;
     }
 
-    utterance.pitch = 1.1; // Slightly higher pitch for pleasantness
-    utterance.rate = 1.25; // Faster, more natural
+    utterance.pitch = 1.0; // Normal pitch for male voice
+    utterance.rate = 1.1; // Slightly faster, natural pace
     utterance.volume = 1;
     
     utterance.onstart = () => setIsSpeaking(true);
@@ -168,8 +169,11 @@ export default function AuthenexChatWidget() {
       // Map 'model' -> 'model' and 'user' -> 'user' for history
       const history = messages.map(m => ({
         role: m.role === "model" ? "model" : "user", // Ensure strict role mapping
-        parts: [{ text: m.text }] 
+        text: m.text 
       }));
+
+      // Get current language code from localStorage or context (assuming t is context-aware but we need code)
+      const currentLang = typeof window !== 'undefined' ? localStorage.getItem('authenex-lang') || 'en' : 'en';
 
       const res = await fetch("http://localhost:8000/api/chat", {
         method: "POST",
@@ -178,12 +182,17 @@ export default function AuthenexChatWidget() {
           message: messageText,
           history: history, // Send simplified history
           mode: mode,
-          analysis_context: contextToSend // Send context (from state or fallback)
+          analysis_context: contextToSend, // Send context (from state or fallback)
+          language: currentLang // Send language preference
         }),
       });
 
       const data = await res.json();
       
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || "Something went wrong");
+      }
+
       const botMsg: Message = { role: "model", text: data.response };
       setMessages((prev) => [...prev, botMsg]);
 
@@ -192,16 +201,16 @@ export default function AuthenexChatWidget() {
         speakResponse(data.response);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
-      setMessages((prev) => [...prev, { role: "model", text: t('chat.connectionError') }]);
+      setMessages((prev) => [...prev, { role: "model", text: `Error: ${error.message || "Connection failed"}` }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-20 right-6 z-50 font-sans">
       <AnimatePresence>
         {isOpen && (
           <motion.div

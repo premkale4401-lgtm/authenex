@@ -6,7 +6,7 @@ import { Sparkles } from "lucide-react";
 
 export default function AnalyzePage() {
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20 lg:pb-0">
+    <div className="max-w-4xl mx-auto space-y-8 pb-64 lg:pb-0">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -32,6 +32,9 @@ export default function AnalyzePage() {
       >
         <ScanUpload />
       </motion.div>
+      
+      {/* Explicit Mobile Spacer */}
+      <div className="h-96 lg:hidden" aria-hidden="true" />
     </div>
   );
 }

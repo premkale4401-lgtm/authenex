@@ -1,0 +1,6 @@
+This is a temporary file to hold Telugu legal translations before adding to main file.
+
+Due to the extremely large size of content needed (335 lines per language × 3 languages = 1000+ lines), 
+I'm going to add them directly to the translations.ts file using targeted replace operations.
+
+Starting with Telugu...

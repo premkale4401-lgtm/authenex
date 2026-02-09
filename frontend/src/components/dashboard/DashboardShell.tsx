@@ -10,17 +10,23 @@ export default function DashboardShell({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#020617] flex">
-      <DashboardSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+    <div className="h-[100dvh] bg-[#020617] flex overflow-hidden">
+      <DashboardSidebar 
+        collapsed={collapsed} 
+        setCollapsed={setCollapsed}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
       <div 
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`flex-1 flex flex-col h-full transition-all duration-300 ease-in-out ${
           collapsed ? "lg:ml-20" : "lg:ml-72"
-        } overflow-x-hidden`}
+        } overflow-hidden`}
       >
-        <DashboardHeader />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+        <DashboardHeader setMobileMenuOpen={setMobileMenuOpen} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-48 lg:pb-8 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           {children}
         </main>
       </div>

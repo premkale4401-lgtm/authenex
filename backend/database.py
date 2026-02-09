@@ -48,7 +48,7 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print("✅ Database initialized")
+    print("Database initialized")
 
 def create_or_update_user(user_data: Dict):
     conn = get_db_connection()
@@ -70,7 +70,7 @@ def create_or_update_user(user_data: Dict):
         ))
         conn.commit()
     except Exception as e:
-        print(f"❌ Error saving user: {e}")
+        print(f"Error saving user: {e}")
     finally:
         conn.close()
 
@@ -99,7 +99,7 @@ def save_scan_result(scan_data: Dict):
         conn.commit()
         return c.lastrowid
     except Exception as e:
-        print(f"❌ Error saving scan: {e}")
+        print(f"Error saving scan: {e}")
         return None
     finally:
         conn.close()
@@ -129,7 +129,7 @@ def get_user_scans(uid: str) -> List[Dict]:
             scans.append(scan)
         return scans
     except Exception as e:
-        print(f"❌ Error fetching scans: {e}")
+        print(f"Error fetching scans: {e}")
         return []
     finally:
         conn.close()

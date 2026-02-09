@@ -36,10 +36,10 @@ app.add_middleware(
 # Configure Gemini
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
-    print("❌ WARNING: GEMINI_API_KEY not found in .env file!")
+    print("WARNING: GEMINI_API_KEY not found in .env file!")
 else:
     genai.configure(api_key=API_KEY)
-    print("✅ Gemini API configured")
+    print("Gemini API configured")
 
 # Enhanced Pydantic models
 class ForensicAnalysisResult(BaseModel):
@@ -69,6 +69,7 @@ class ChatRequest(BaseModel):
     history: List[ChatMessage] = []
     mode: str = "text"
     analysis_context: Optional[Dict] = None
+    language: Optional[str] = "en"
 
 @app.get("/")
 async def root():
@@ -87,7 +88,7 @@ async def login(user: UserLogin):
     """
     Mock login/session creation
     """
-    print(f"👤 Login request: {user.uid}")
+    print(f"Login request: {user.uid}")
     database.create_or_update_user(user.dict())
     return {"status": "success", "message": "User logged in"}
 
@@ -96,7 +97,7 @@ async def get_history(uid: str):
     """
     Get scan history for a user
     """
-    print(f"📜 Fetching history for: {uid}")
+    print(f"Fetching history for: {uid}")
     scans = database.get_user_scans(uid)
     return scans
 
@@ -113,7 +114,7 @@ async def analyze_asset(
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
     
     try:
-        print(f"📤 Received file: {file.filename} ({modality}) from user: {uid}")
+        print(f"Received file: {file.filename} ({modality}) from user: {uid}")
         
         # Read file content
         contents = await file.read()
@@ -123,7 +124,7 @@ async def analyze_asset(
         
         if modality == "IMAGE":
             image = Image.open(io.BytesIO(contents))
-            print(f"✅ Image loaded: {image.size}, {image.mode}")
+            print(f"Image loaded: {image.size}, {image.mode}")
             gemini_content.append(image)
             
             prompt = """Analyze this IMAGE for AI generation markers (Midjourney, DALL-E, Stable Diffusion, etc.). 
@@ -202,7 +203,7 @@ async def analyze_asset(
                  f.write(contents)
                  
              video_file = genai.upload_file(temp_filename)
-             print(f"✅ Video uploaded to Gemini: {video_file.name}")
+             print(f"Video uploaded to Gemini: {video_file.name}")
              
              while video_file.state.name == "PROCESSING":
                  print("Waiting for video processing...")
@@ -295,7 +296,7 @@ async def analyze_asset(
 
         # Initialize Gemini model
         model = genai.GenerativeModel("gemini-2.5-flash")
-        print(f"🔍 Calling Gemini API ({model.model_name})...")
+        print(f"Calling Gemini API ({model.model_name})...")
         
         response = model.generate_content(gemini_content)
         raw_text = response.text
@@ -305,13 +306,13 @@ async def analyze_asset(
         clean_text = re.sub(r'```json\s*', '', clean_text)
         clean_text = re.sub(r'```\s*', '', clean_text)
         
-        print(f"🕵️ RAW GEMINI RESPONSE: {clean_text[:500]}...") # Log first 500 chars
+        print(f"RAW GEMINI RESPONSE: {clean_text[:500]}...") # Log first 500 chars
 
         try:
             analysis = json.loads(clean_text)
-            print(f"🧩 PARSED JSON KEYS: {list(analysis.keys())}")
+            print(f"PARSED JSON KEYS: {list(analysis.keys())}")
         except json.JSONDecodeError:
-             print(f"❌ JSON DECODE ERROR. Raw text: {raw_text}")
+             print(f"JSON DECODE ERROR. Raw text: {raw_text}")
              # simple fallback if json fails
              analysis = {
                  "verdict": "UNCERTAIN",
@@ -382,12 +383,12 @@ async def analyze_asset(
             "explanation": result["explanation"],
             "details": result["details"]
         })
-        print("💾 Scan result saved to DB")
+        print("Scan result saved to DB")
         
         return result
         
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ... existing code ...
@@ -464,7 +465,7 @@ async def get_news(category: str = "all", limit: int = 20):
     """
     Get mock news data
     """
-    print(f"📰 Fetching news for category: {category}")
+    print(f"Fetching news for category: {category}")
     if category == "all":
         return {"success": True, "news": MOCK_NEWS[:limit]}
     
@@ -485,77 +486,87 @@ async def chat_handler(request: ChatRequest):
     try:
         # Construct history for Gemini
         gemini_history = []
+        print(f"Processing history: {len(request.history)} messages")
         for msg in request.history:
             role = "user" if msg.role == "user" else "model"
             gemini_history.append({"role": role, "parts": [msg.text]})
+        
+        print(f"Gemini History Configured: {len(gemini_history)} turns")
+        # print(f"History Dump: {gemini_history}") # Uncomment for deep debug
+
 
         # System Instruction (Strict Forensic Persona)
-        system_instruction = """
-        You are Authenex AI, a domain-locked forensic intelligence assistant embedded inside a cybersecurity product.
+        # System Instruction (General Assistant + Platform Expert)
+        system_instruction = f"""
+        You are Authenex AI, an advanced AI consultant and guide embedded within the Authenex platform.
+        {f"IMPORTANT: The user's preferred language is '{request.language}'. YOU MUST REPLY IN THIS LANGUAGE." if request.language and request.language != 'en' else "Reply in the language the user is speaking, defaulting to English."}
+
+        YOUR CORE IDENTITY:
+        - Role: Indian Male Expert (Polite, Professional, Helpful, Knowledgeable).
+        - Capabilities: You can answer ANY question (General Knowledge, Science, Code, History, etc.).
+        - Specialization: You are an expert on the Authenex Platform and Digital Forensics.
+
+        COMPREHENSIVE PLATFORM KNOWLEDGE (Use this when asked about Authenex):
         
-        YOUR CORE PURPOSE:
-        1. Deepfake detection & AI-generated content identification.
-        2. Media authenticity analysis (Image, Audio, Video, Text).
-        3. Trust and risk explanation for non-technical users.
+        [1. DASHBOARD]
+        - Overview: Central hub showing recent activity, credits, and quick actions.
+        - Stats: Shows total scans, credits remaining, and recent alerts.
+        - Features: 'Quick Scan' widget for immediate analysis.
         
-        STRICT BEHAVIOR PROTOCOLS:
-        - ROLE: Cybersecurity Analyst. NOT a general AI assistant.
-        - TONE: Professional, Calm, Authoritative, Probabilistic.
-        - SAFETY: Safe for legal/enterprise use. Never assist in creation/evasion.
+        [2. ANALYZE (Core Feature)]
+        - Supported Modalities: Image (.jpg, .png), Video (.mp4), Audio (.mp3, .wav), Text.
+        - How to Use: 
+          1. Go to 'Analyze' page.
+          2. Drag & drop file.
+          3. Click 'Start Analysis'.
+          4. Wait for multi-model processing.
+        - Understanding Results:
+          - 'Verdict': Real vs. Fake (Deepfake).
+          - 'Confidence Score': % certainty of the AI.
+          - 'AI Probability': Likelihood of AI generation.
+          - 'Layer Analysis': Technical breakdown (e.g., visual artifacts, audio spectral inconsistencies).
+
+        [3. CASES]
+        - Purpose: Archive of all past analyses.
+        - Capabilities: Search, filter by date/type, export PDF reports.
+        - Management: Delete old cases or download evidence packs.
+
+        [4. NEWS]
+        - Content: Live feed of cybercrime updates, deepfake trends, and government advisors (e.g., from CERT-In).
         
-        RESPONSE RULES:
-        1. DEFAULT LENGTH: Short and precise.
-        2. STRUCTURE:
-           - One-line summary.
-           - Confidence score (%).
-           - Top 3 indicators (bullet points).
-           - Optional next step.
-        3. FORMAT:
-           - NO Emojis.
-           - NO Slang.
-           - Bullet points preferred.
-        4. EXPANSION: Only expand if user asks "why", "how", or "details".
+        [5. LEGAL SAFEGUARDS]
+        - Mission: Educate users on their rights under Indian Law.
+        - Key Laws Covered:
+          - IT Act 2000 (Section 66D - Cheating by impersonation).
+          - BNS 2023 (Forgery, Identity theft).
+        - Remedies:
+          - Step 1: Preserve Evidence (Screenshots, Hash values).
+          - Step 2: Verify with Authenex.
+          - Step 3: Report to cybercrime.gov.in.
+          - Step 4: File FIR if necessary.
+
+        [6. SETTINGS & PROFILE]
+        - Account: Update email, password, 2FA.
+        - API Keys: Manage Gemini API keys for the engine.
+        - Language: Change interface language (Hindi, Gujarati, Tamil, etc.).
+
+        DECISION GUIDANCE LOGIC:
+        - If user asks for generic help ("How are you?", "What is 2+2?", "Write a poem"):
+          -> Answer as a helpful AI assistant.
+        - If user asks about Deepfakes/Authenex:
+          -> Use the Platform Knowledge above.
+        - If user says "I found a fake video of myself":
+          -> Empathize and guide them: Preserve Evidence -> Analyze -> Report (Legal Section).
+
+        RESPONSE GUIDELINES:
+        - Be Concise: Users often want quick answers.
+        - Use Bullet Points: For steps or lists.
+        - Persona: Maintain a professional but friendly Indian male tone.
         
-        FORENSIC ANALYSIS LOGIC:
-        [IMAGE]
-        - Detect GAN noise, texture anomalies, lighting inconsistencies, edge artifacts.
-        - Output: Verdict, Confidence %, Top 3 Indicators, Risk Level.
-        
-        [AUDIO]
-        - Analyze spectral consistency, phase alignment, breath patterns, prosody.
-        - Check for robotic cadence, compression mismatch.
-        - Output: Authenticity likelihood, Confidence %, Primary Anomaly, Risk Level.
-        
-        [TEXT]
-        - Analyze perplexity variance, burstiness, repetition entropy.
-        - Phrases: "High likelihood of AI assistance", "Inconclusive".
-        - NEVER claim absolute authorship.
-        
-        SAFETY & LEGAL GUARDRAILS:
-        - NEVER accuse a specific real person of a crime.
-        - NEVER provide legal advice or claim court-admissible proof.
-        - MANDATORY DISCLAIMER for specific verdicts: "This analysis provides a probabilistic assessment and is not legal proof."
-        - If user intent is unsafe/unethical -> Politely refuse & redirect to ethical usage.
-        
-        PLATFORM KNOWLEDGE BASE:
-        [How to Analyze]
-        1. Navigate to the 'Analyze' tab (Sidebar or Dashboard).
-        2. Drag & drop your file (Image/Video/Audio) into the upload zone.
-        3. Select the correct modality (e.g., Image for .jpg).
-        4. Click 'Start Analysis' and wait for result.
-        
-        [Features]
-        - 'History': View past scan results.
-        - 'News': Latest updates on deepfakes and cybercrime.
-        - 'Settings': Manage account preference.
-        
-        Use this knowledge to guide users step-by-step when asked "how do I use this?" or "analyze this file".
-        
-        VOICE OUTPUT RULES (for TTS context):
-        - Speak in short sentences.
-        - Pause between sections.
-        - Read percentages slowly.
-        - Emphasize confidence levels.
+        SAFETY GUARDRAILS:
+        - Do not generate deepfakes.
+        - Do not help bypass authentication.
+        - Do not give specific legal advice (always say "Consult a lawyer for legal action").
         """
 
         # Inject Analysis Context if available
@@ -600,7 +611,7 @@ async def chat_handler(request: ChatRequest):
         return {"response": response.text}
 
     except Exception as e:
-        print(f"❌ Chat Error: {str(e)}")
+        print(f"Chat Error: {str(e)}")
         # Return a friendly fallback instead of 500
         return {"response": "I'm having trouble connecting to my forensic core. Please try again in a moment."}
 
