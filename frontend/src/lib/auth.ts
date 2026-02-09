@@ -32,28 +32,78 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Demo login - no password check
-        if (credentials?.email === "test@authenex.com") {
+        try {
+          // Demo login - accepts any email for testing
+          const selectedRole = (credentials as any)?.role || "ANALYST";
+          const email = credentials?.email;
+          const password = credentials?.password;
+          
+          if (!email || !password) {
+            return null;
+          }
+
+          // Basic email validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            return null;
+          }
+
+          // Demo mode - accept any valid email format
+          // In production, you would validate against a database
+          let userRole = selectedRole;
+          let userId = `user-${Date.now()}`;
+          let name = email.split('@')[0];
+          
+          // Special handling for known demo accounts
+          if (email === "test@authenex.com" || email === "admin@authenex.gov") {
+            if (selectedRole === "ADMIN") {
+              userRole = "ADMIN";
+              userId = "admin-001";
+              name = "System Admin";
+            } else {
+              userRole = "ANALYST";
+              userId = "analyst-001";
+              name = "Demo Analyst";
+            }
+          } else {
+            // For new accounts, capitalize first letter
+            name = name.charAt(0).toUpperCase() + name.slice(1);
+          }
+
           return {
-            id: "test-001",
-            name: "Demo Analyst",
-            email: "test@authenex.com",
-            image: "https://ui-avatars.com/api/?name=Demo+Analyst&background=06b6d4&color=fff",
-            role: "ANALYST",
-            clearanceLevel: 3,
+            id: userId,
+            name: name,
+            email: email,
+            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`,
+            role: userRole,
+            clearanceLevel: userRole === "ADMIN" ? 5 : 3,
           };
+        } catch (error) {
+          console.error("Authorization error:", error);
+          return null;
         }
-        return null;
       }
     })
   ],
   
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role || "USER";
-        token.clearanceLevel = (user as any).clearanceLevel || 1;
+        
+        // Identify Admin users
+        // Rule 1: Email ends with @authenex.gov
+        // Rule 2: Specific admin emails
+        const adminEmails = ["admin@authenex.gov", "visha@authenex.gov"];
+        const isAdminEmail = user.email?.endsWith("@authenex.gov") || (user.email && adminEmails.includes(user.email));
+        
+        if (isAdminEmail) {
+          token.role = "ADMIN";
+          token.clearanceLevel = 5;
+        } else {
+          token.role = (user as any).role || "USER";
+          token.clearanceLevel = (user as any).clearanceLevel || 1;
+        }
       }
       return token;
     },

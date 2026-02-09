@@ -19,7 +19,6 @@ import {
   LucideIcon
 } from "lucide-react";
 import Link from "next/link";
-import LanguageSelector from "@/components/common/LanguageSelector";
 import { useLanguage } from "@/context/LanguageContext";
 import ParticleNetwork from "@/components/background/ParticleNetwork";
 import AuroraBackground from "@/components/background/AuroraBackground";
@@ -58,7 +57,7 @@ const FloatingInput = ({ id, label, value, onChange, type = "text", icon: Icon }
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className="w-full pl-4 pr-4 pt-5 pb-1.5 bg-slate-950/50 border border-slate-800 rounded-lg text-slate-100 placeholder-transparent focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 focus:bg-slate-900/80 transition-all shadow-inner text-sm font-medium h-12"
+        className="w-full pl-4 pr-4 pt-5 pb-1.5 bg-[#111827]/50 border border-slate-800 rounded-lg text-slate-100 placeholder-transparent focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 focus:bg-[#1a2234]/80 transition-all shadow-inner text-sm font-medium h-12"
         placeholder={label} 
         required
       />
@@ -78,6 +77,7 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("ANALYST"); // Default role
   
   // Optimized Mouse Tracking
   const mouseX = useMotionValue(0);
@@ -116,7 +116,7 @@ export default function SignIn() {
     setError("");
     try {
       await signIn("google", { 
-        callbackUrl: "/dashboard",
+        callbackUrl: "/auth/callback",
         redirect: true 
       });
     } catch (err) {
@@ -131,10 +131,32 @@ export default function SignIn() {
     setIsLoading(true);
     setError("");
 
+    // Basic validation
+    if (!email.trim()) {
+      setError("Email is required");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Password is required");
+      setIsLoading(false);
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const result = await signIn("credentials", {
         email,
         password,
+        role,
         redirect: false,
       });
 
@@ -142,7 +164,11 @@ export default function SignIn() {
         setError("Invalid email or password");
         setIsLoading(false);
       } else {
-        window.location.href = "/dashboard";
+         if (role === "ADMIN") {
+            window.location.href = "/admin";
+        } else {
+            window.location.href = "/dashboard";
+        }
       }
     } catch (err) {
       console.error("Email sign in error:", err);
@@ -302,9 +328,7 @@ export default function SignIn() {
 
       {/* Right Panel - Centered Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-6 xl:p-12 relative z-20 bg-slate-950/60 backdrop-blur-3xl min-h-screen">
-        <div className="absolute top-4 right-4 xl:top-6 xl:right-6 z-50">
-          <LanguageSelector />
-        </div>
+
 
         <motion.div 
           initial={{ opacity: 0, x: 40 }}
@@ -382,6 +406,24 @@ export default function SignIn() {
                 animate="visible"
                 className="space-y-4"
               >
+                {/* Role Selection */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-900/50 rounded-lg border border-slate-800/50">
+                  {['ADMIN', 'ANALYST'].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`text-xs font-semibold py-2 rounded-md transition-all duration-300 ${
+                        role === r 
+                          ? 'bg-sky-500/20 text-sky-400 shadow-sm ring-1 ring-sky-500/50' 
+                          : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                      }`}
+                    >
+                      {r === 'ADMIN' ? 'Admin' : 'Analyst'}
+                    </button>
+                  ))}
+                </div>
+
                 <FloatingInput
                   id="email"
                   label="Email Address"

@@ -13,12 +13,33 @@ import os
 import json
 import re
 from dotenv import load_dotenv
-import database  # Local database module
+# SQLAlchemy imports
+from sqlalchemy.orm import Session
+from db_config import get_db, init_db
+from models import User, Scan, AuditLog, Verification
 
 # Load environment variables
 from pathlib import Path
-env_path = Path(__file__).parent.parent / 'env' / '.env'
-load_dotenv(dotenv_path=env_path)
+import sys
+
+# Try multiple paths to find .env file
+env_paths = [
+    Path(__file__).parent.parent / 'env' / '.env',  # ../env/.env
+    Path('.').parent / 'env' / '.env',  # ../env/.env (relative)
+    Path('.') / 'env' / '.env',  # ./env/.env
+    Path('.') / '.env',  # ./.env
+]
+
+env_loaded = False
+for env_path in env_paths:
+    if env_path.exists():
+        print(f"Loading environment from: {env_path}")
+        load_dotenv(dotenv_path=env_path)
+        env_loaded = True
+        break
+
+if not env_loaded:
+    print(f"WARNING: Could not find .env file. Tried: {[str(p) for p in env_paths]}")
 
 # Initialize FastAPI
 app = FastAPI(title="Authenex AI Analysis API", version="1.0.0")
@@ -71,6 +92,12 @@ class ChatRequest(BaseModel):
     analysis_context: Optional[Dict] = None
     language: Optional[str] = "en"
 
+# Initialize database on startup
+@app.on_event("startup")
+async def startup():
+    init_db()
+    print("✅ Database initialized")
+
 @app.get("/")
 async def root():
     """Health check"""
@@ -79,33 +106,85 @@ async def root():
         "status": "running",
         "version": "2.0.0",
         "gemini_configured": bool(API_KEY),
-        "database": "sqlite_local",
+        "database": "postgresql",
         "supported_modalities": ["image", "video", "audio", "document"]
     }
 
 @app.post("/auth/login")
-async def login(user: UserLogin):
+async def login(user: UserLogin, db: Session = Depends(get_db)):
     """
-    Mock login/session creation
+    Create or update user on login
     """
     print(f"Login request: {user.uid}")
-    database.create_or_update_user(user.dict())
+    
+    # Check if user exists
+    db_user = db.query(User).filter(User.uid == user.uid).first()
+    
+    if not db_user:
+        # Create new user
+        db_user = User(
+            uid=user.uid,
+            email=user.email,
+            display_name=user.displayName,
+            photo_url=user.photoURL
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        print(f"✅ Created new user: {user.email}")
+    else:
+        # Update existing user
+        db_user.email = user.email
+        db_user.display_name = user.displayName
+        db_user.photo_url = user.photoURL
+        db.commit()
+        print(f"✅ Updated user: {user.email}")
+    
+    # Create audit log
+    audit = AuditLog(
+        uid=user.uid,
+        action="USER_LOGIN",
+        ip_address="unknown",  # TODO: Extract from request
+        details={"email": user.email}
+    )
+    db.add(audit)
+    db.commit()
+    
     return {"status": "success", "message": "User logged in"}
 
 @app.get("/history/{uid}")
-async def get_history(uid: str):
+async def get_history(uid: str, db: Session = Depends(get_db)):
     """
     Get scan history for a user
     """
     print(f"Fetching history for: {uid}")
-    scans = database.get_user_scans(uid)
-    return scans
+    
+    scans = db.query(Scan).filter(Scan.uid == uid).order_by(Scan.created_at.desc()).all()
+    
+    return [
+        {
+            "id": s.id,
+            "filename": s.filename,
+            "fileType": s.file_type,
+            "modality": s.modality,
+            "verdict": s.verdict,
+            "confidence": s.confidence,
+            "aiPercentage": s.ai_percentage,
+            "humanPercentage": s.human_percentage,
+            "model": s.model,
+            "reasoning": s.reasoning,
+            "created_at": s.created_at.isoformat(),
+            "details": s.details
+        }
+        for s in scans
+    ]
 
 @app.post("/analyze", response_model=ForensicAnalysisResult)
 async def analyze_asset(
     file: UploadFile = File(...), 
     uid: str = "anonymous",
-    modality: str = "IMAGE"
+    modality: str = "IMAGE",
+    db: Session = Depends(get_db)
 ):
     """
     Analyze an asset (Image, Video, Audio, Document) for AI generation indicators
@@ -295,7 +374,7 @@ async def analyze_asset(
              gemini_content.append(prompt)
 
         # Initialize Gemini model
-        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         print(f"Calling Gemini API ({model.model_name})...")
         
         response = model.generate_content(gemini_content)
@@ -368,22 +447,26 @@ async def analyze_asset(
             }
         }
         
-        # Save to Local Database
-        database.save_scan_result({
-            "uid": uid,
-            "imageUrl": "local_upload", 
-            "filename": file.filename,
-            "fileType": file.content_type,
-            "modality": modality,
-            "verdict": result["verdict"],
-            "confidence": result["confidence"],
-            "aiPercentage": result["aiPercentage"],
-            "humanPercentage": result["humanPercentage"],
-            "model": "gemini-2.0-flash-exp",
-            "explanation": result["explanation"],
-            "details": result["details"]
-        })
-        print("Scan result saved to DB")
+        
+        # Save to Database using SQLAlchemy
+        scan = Scan(
+            uid=uid,
+            image_url="local_upload",
+            filename=file.filename,
+            file_type=file.content_type,
+            modality=modality,
+            verdict=result["verdict"],
+            confidence=result["confidence"],
+            ai_percentage=result["aiPercentage"],
+            human_percentage=result["humanPercentage"],
+            model="gemini-1.5-flash",
+            reasoning=result["explanation"],
+            details=result["details"]
+        )
+        db.add(scan)
+        db.commit()
+        db.refresh(scan)
+        print(f"✅ Scan result saved to DB (ID: {scan.id})")
         
         return result
         
@@ -587,7 +670,7 @@ async def chat_handler(request: ChatRequest):
             system_instruction += context_str
 
         # Initialize model with system instruction
-        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_instruction)
+        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
         
         # Start chat session
         chat = model.start_chat(history=gemini_history)
