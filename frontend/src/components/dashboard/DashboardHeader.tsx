@@ -52,7 +52,8 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="h-20 bg-slate-900/50 backdrop-blur-xl border-b border-slate-800/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
+    <header className="h-20 bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30 shadow-lg shadow-black/20">
+      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 to-transparent" />
       {/* Mobile Menu Button */}
       <button 
         onClick={() => setMobileMenuOpen(true)}

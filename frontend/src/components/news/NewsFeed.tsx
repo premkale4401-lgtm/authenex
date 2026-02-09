@@ -47,7 +47,7 @@ export default function NewsFeed() {
   return (
     <div className="space-y-8">
       {/* Premium Filter Bar */}
-      <div className="sticky top-4 z-30 bg-slate-950/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-800/60 shadow-2xl flex flex-nowrap overflow-x-auto no-scrollbar gap-1">
+      <div className="relative mb-8 bg-gradient-to-r from-slate-900/80 to-slate-900/40 backdrop-blur-xl p-2 rounded-2xl border border-slate-800/60 shadow-2xl flex flex-nowrap overflow-x-auto no-scrollbar gap-2">
         {categories.map((category) => {
           const Icon = category.icon;
           return (
@@ -55,10 +55,10 @@ export default function NewsFeed() {
               key={category.id}
               onClick={() => setActiveCategory(category.id as NewsCategory | 'all')}
               className={cn(
-                "px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 whitespace-nowrap",
+                "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 whitespace-nowrap border border-transparent",
                 activeCategory === category.id
-                  ? "bg-slate-800 text-white shadow-lg ring-1 ring-slate-700"
-                  : "text-slate-400 hover:text-white hover:bg-slate-900"
+                  ? "bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-lg shadow-sky-500/20 border-white/10"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60 hover:border-slate-700/50"
               )}
             >
               <Icon className={cn("w-4 h-4", activeCategory === category.id ? "text-sky-400" : "")} />

@@ -53,7 +53,7 @@ export default function TopNav() {
       animate={{ y: 0 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled 
-          ? "bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/50 shadow-lg shadow-sky-500/5" 
+          ? "bg-slate-950/60 backdrop-blur-2xl border-b border-white/5 shadow-lg shadow-sky-500/5" 
           : "bg-transparent"
       }`}
     >

@@ -295,7 +295,7 @@ async def analyze_asset(
              gemini_content.append(prompt)
 
         # Initialize Gemini model
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash-exp")
         print(f"Calling Gemini API ({model.model_name})...")
         
         response = model.generate_content(gemini_content)
@@ -379,7 +379,7 @@ async def analyze_asset(
             "confidence": result["confidence"],
             "aiPercentage": result["aiPercentage"],
             "humanPercentage": result["humanPercentage"],
-            "model": "gemini-2.5-flash",
+            "model": "gemini-2.0-flash-exp",
             "explanation": result["explanation"],
             "details": result["details"]
         })
@@ -587,7 +587,7 @@ async def chat_handler(request: ChatRequest):
             system_instruction += context_str
 
         # Initialize model with system instruction
-        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)
+        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_instruction)
         
         # Start chat session
         chat = model.start_chat(history=gemini_history)

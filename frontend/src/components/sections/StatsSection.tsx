@@ -37,7 +37,7 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
 }
 
 const stats = [
-  { value: 99.9, suffix: "%", label: "Detection Accuracy", sub: "Independent benchmark" },
+  { value: 1, suffix: "B+", label: "Data Points Analyzed", sub: "For Model Training" },
   { value: 50, suffix: "M+", label: "Files Analyzed", sub: "Since 2022" },
   { value: 150, suffix: "+", label: "Enterprise Clients", sub: "Fortune 500 & Gov" },
   { value: 150, suffix: "ms", label: "Avg Response Time", sub: "Edge-deployed" }

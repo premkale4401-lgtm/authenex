@@ -73,14 +73,15 @@ export default function DashboardSidebar({
           x: typeof window !== 'undefined' && window.innerWidth < 1024 ? (mobileMenuOpen ? 0 : -288) : 0
         }}
         transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-        className="fixed left-0 top-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 z-50 flex flex-col lg:translate-x-0"
+        className="fixed left-0 top-0 h-screen bg-gradient-to-b from-slate-900 via-[#0B1120] to-slate-950 border-r border-slate-800/50 z-50 flex flex-col lg:translate-x-0 shadow-2xl shadow-black/50"
       >
         <div className="flex flex-col h-full w-full overflow-hidden">
           {/* Logo */}
-          <div className="h-20 flex items-center px-6 border-b border-slate-800/50 min-w-[288px]">
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5 text-white" />
+          <div className="h-24 flex items-center px-6 border-b border-slate-800/50 min-w-[288px] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-sky-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Link href="/dashboard" className="flex items-center gap-4 relative z-10">
+              <div className="w-11 h-11 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-sky-500/20 ring-1 ring-white/10 group-hover:scale-105 transition-transform duration-300">
+                <Shield className="w-6 h-6 text-white" />
               </div>
               {!collapsed && (
                 <motion.div
@@ -88,15 +89,15 @@ export default function DashboardSidebar({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <span className="font-bold text-white text-lg">Authenex</span>
-                  <span className="block text-[10px] text-sky-400 uppercase tracking-wider">TrustLens</span>
+                  <span className="font-bold text-white text-xl tracking-tight">Authenex</span>
+                  <span className="block text-[10px] text-sky-400 uppercase tracking-widest font-semibold mt-0.5">TrustLens Intelligence</span>
                 </motion.div>
               )}
             </Link>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+          <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-800">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -106,27 +107,29 @@ export default function DashboardSidebar({
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${
+                  className={`flex items-center gap-3 px-3 py-3.5 rounded-xl transition-all group relative overflow-hidden ${
                     isActive 
-                      ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" 
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      ? "text-white" 
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/40"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-sky-400" : "group-hover:text-sky-400"} transition-colors`} />
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-nav"
+                      className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-transparent border-l-2 border-sky-500"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <Icon className={`w-5 h-5 flex-shrink-0 relative z-10 ${isActive ? "text-sky-400" : "group-hover:text-sky-400"} transition-colors duration-300`} />
                   {!collapsed && (
                     <motion.span
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="font-medium text-sm whitespace-nowrap"
+                      className="font-medium text-sm whitespace-nowrap relative z-10"
                     >
                       {t(item.name)}
                     </motion.span>
-                  )}
-                  {isActive && !collapsed && (
-                    <motion.div
-                      layoutId="active-pill"
-                      className="ml-auto w-1.5 h-1.5 rounded-full bg-sky-400"
-                    />
                   )}
                 </Link>
               );
@@ -134,7 +137,7 @@ export default function DashboardSidebar({
           </nav>
 
           {/* Bottom section */}
-          <div className="p-3 border-t border-slate-800/50 space-y-1 min-w-[288px]">
+          <div className="p-4 border-t border-slate-800/50 space-y-2 min-w-[288px] bg-slate-900/30">
             {bottomItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -142,7 +145,7 @@ export default function DashboardSidebar({
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all group"
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all group hover:pl-4"
                 >
                   <Icon className="w-5 h-5 flex-shrink-0 group-hover:text-sky-400 transition-colors" />
                   {!collapsed && (
@@ -157,8 +160,6 @@ export default function DashboardSidebar({
                 </Link>
               );
             })}
-            
-
           </div>
         </div>
 

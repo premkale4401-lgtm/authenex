@@ -167,7 +167,7 @@ export default function HeroSection() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Verification</p>
-                  <p className="text-lg font-bold text-slate-200">99.9%</p>
+                  <p className="text-lg font-bold text-slate-200">High Precision</p>
                 </div>
               </div>
             </motion.div>
