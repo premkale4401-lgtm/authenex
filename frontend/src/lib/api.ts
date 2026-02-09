@@ -123,3 +123,94 @@ export const getScanHistory = async () => {
     return [];
   }
 };
+
+// ==========================================
+//  SETTINGS API SERVICES
+// ==========================================
+
+export interface UserSettings {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  role: string;
+  is2faEnabled: boolean;
+  preferences: {
+    notifications?: {
+      email: boolean;
+      push: boolean;
+    };
+    theme?: string;
+    language?: string;
+  };
+}
+
+export const getUserSettings = async (): Promise<UserSettings | null> => {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const response = await fetch(`${BACKEND_URL}/api/settings/user`, {
+      headers: authHeaders,
+    });
+    
+    if (!response.ok) throw new Error("Failed to fetch settings");
+    return await response.json();
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+};
+
+export const updateUserSettings = async (settings: Partial<UserSettings['preferences']> & { is2faEnabled?: boolean }) => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/settings/user`, {
+    method: "PATCH",
+    headers: {
+      ...authHeaders,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(settings),
+  });
+  
+  if (!response.ok) throw new Error("Failed to update settings");
+  return await response.json();
+};
+
+export const updateUserProfile = async (profile: { displayName?: string; photoURL?: string }) => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/user/profile`, {
+    method: "POST",
+    headers: {
+      ...authHeaders,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(profile),
+  });
+  
+  if (!response.ok) throw new Error("Failed to update profile");
+  return await response.json();
+};
+
+export const getSystemSettings = async () => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/settings/system`, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch system settings");
+  return await response.json();
+};
+
+export const updateSystemSetting = async (key: string, value: any, description?: string) => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/settings/system`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key, value, description }),
+  });
+  
+  if (!response.ok) throw new Error("Failed to update system setting");
+  return await response.json();
+};

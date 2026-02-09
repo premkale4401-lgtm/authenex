@@ -105,12 +105,158 @@ class ChatMessage(BaseModel):
     role: str
     text: str
 
-class ChatRequest(BaseModel):
-    message: str
-    history: List[ChatMessage] = []
-    mode: str = "text"
-    analysis_context: Optional[Dict] = None
-    language: Optional[str] = "en"
+# Pydantic Models for Settings
+class UserProfileUpdate(BaseModel):
+    displayName: Optional[str] = None
+    photoURL: Optional[str] = None
+    preferences: Optional[Dict] = None
+
+class UserSettingsUpdate(BaseModel):
+    is2faEnabled: Optional[bool] = None
+    notifications: Optional[Dict] = None
+    theme: Optional[str] = None
+    language: Optional[str] = None
+
+class SystemSettingUpdate(BaseModel):
+    key: str
+    value: Dict
+    description: Optional[str] = None
+
+# ==========================================
+#  USER SETTINGS ENDPOINTS
+# ==========================================
+
+@app.get("/api/settings/user")
+async def get_user_settings(
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    """Fetch current user settings and profile"""
+    db_user = db.query(User).filter(User.uid == user["sub"]).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "uid": db_user.uid,
+        "email": db_user.email,
+        "displayName": db_user.display_name,
+        "photoURL": db_user.photo_url,
+        "role": db_user.role,
+        "is2faEnabled": db_user.is_2fa_enabled,
+        "preferences": db_user.preferences or {}
+    }
+
+@app.patch("/api/settings/user")
+async def update_user_settings(
+    settings: UserSettingsUpdate,
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    """Update user preferences and security settings"""
+    db_user = db.query(User).filter(User.uid == user["sub"]).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update preferences
+    current_prefs = db_user.preferences or {}
+    
+    if settings.notifications is not None:
+        current_prefs["notifications"] = settings.notifications
+    if settings.theme is not None:
+        current_prefs["theme"] = settings.theme
+    if settings.language is not None:
+        current_prefs["language"] = settings.language
+        
+    db_user.preferences = current_prefs
+    
+    # Update Security Settings
+    if settings.is2faEnabled is not None:
+        db_user.is_2fa_enabled = settings.is2faEnabled
+        
+    db.commit()
+    
+    # Log action
+    db.add(AuditLog(
+        uid=user["sub"],
+        action="SETTINGS_UPDATED",
+        ip_address="unknown",
+        details={"changes": settings.dict(exclude_unset=True)}
+    ))
+    db.commit()
+    
+    return {"status": "success", "message": "Settings updated"}
+
+@app.post("/api/user/profile")
+async def update_user_profile(
+    profile: UserProfileUpdate,
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    """Update public profile information"""
+    db_user = db.query(User).filter(User.uid == user["sub"]).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if profile.displayName is not None:
+        db_user.display_name = profile.displayName
+    if profile.photoURL is not None:
+        db_user.photo_url = profile.photoURL
+        
+    db.commit()
+    return {"status": "success", "message": "Profile updated"}
+
+# ==========================================
+#  ADMIN SYSTEM SETTINGS (RBAC Protected)
+# ==========================================
+
+@app.get("/api/settings/system")
+async def get_system_settings(
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """Fetch all system configuration (Admin only)"""
+    from models import SystemSetting  # Local import to avoid circular dep if needed
+    settings = db.query(SystemSetting).all()
+    return {s.key: s.value for s in settings}
+
+@app.put("/api/settings/system")
+async def update_system_setting(
+    setting: SystemSettingUpdate,
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """Update a specific system setting (Admin only)"""
+    from models import SystemSetting
+    
+    db_setting = db.query(SystemSetting).filter(SystemSetting.key == setting.key).first()
+    
+    if not db_setting:
+        # Create new setting
+        db_setting = SystemSetting(
+            key=setting.key,
+            value=setting.value,
+            description=setting.description
+        )
+        db.add(db_setting)
+    else:
+        # Update existing
+        db_setting.value = setting.value
+        if setting.description:
+            db_setting.description = setting.description
+            
+    db.commit()
+    
+    # Log admin action
+    db.add(AuditLog(
+        uid=admin["sub"],
+        action="SYSTEM_SETTING_CHANGED",
+        ip_address="unknown",
+        details={"key": setting.key, "value": setting.value}
+    ))
+    db.commit()
+    
+    return {"status": "success", "message": f"Setting '{setting.key}' updated"}
+
 
 # Initialize database on startup
 @app.on_event("startup")

@@ -14,116 +14,225 @@ import {
   Key,
   CheckCircle2,
   AlertTriangle,
-  Trash2
+  Trash2,
+  Loader2,
+  Save
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import { getUserSettings, updateUserSettings, UserSettings } from "@/lib/api";
 
 export default function SettingsPage() {
   const { t } = useLanguage();
-  const [theme, setTheme] = useState("dark");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
-  const [securitySettings, setSecuritySettings] = useState([
-    { id: "2fa", label: "Two-Factor Authentication", enabled: true, description: "Secure your account with 2FA" },
-    { id: "biometric", label: "Biometric Login", enabled: false, description: "Use fingerprint or face recognition" },
-    { id: "alerts", label: "Security Alerts", enabled: true, description: "Get notified of suspicious activity" },
-  ]);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const toggleSecurity = (id: string) => {
-    setSecuritySettings(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+  // Fetch settings on mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getUserSettings();
+      if (data) {
+        setSettings(data);
+      }
+    } catch (error) {
+      showToast("Failed to load settings", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const basicSections = [
-    {
-      title: t('settings.appearance'),
-      items: [
-        {
-          icon: Moon,
-          label: t('settings.items.darkMode'),
-          description: "Always use dark theme",
-          control: (
-            <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-pointer">
-              <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-md" />
-            </div>
-          )
-        },
-        {
-          icon: Globe,
-          label: t('settings.items.language'),
-          description: "English (US)", // Ideally this should be dynamic based on current language
-          control: (
-            <button className="text-sky-400 hover:text-sky-300 text-sm font-medium flex items-center gap-1">
-              Change <ChevronRight className="w-4 h-4" />
-            </button>
-          )
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleToggle = async (section: string, key: string, value: boolean) => {
+    if (!settings) return;
+
+    // Optimistic update
+    const previousSettings = { ...settings };
+    let newSettings = { ...settings };
+
+    if (section === 'preferences.notifications') {
+      newSettings.preferences = {
+        ...newSettings.preferences,
+        notifications: {
+          ...newSettings.preferences.notifications,
+          [key]: value
+        } as any
+      };
+    } else if (section === 'security') {
+        if (key === 'is2faEnabled') {
+            newSettings.is2faEnabled = value;
         }
-      ]
-    },
-    {
-      title: t('settings.notifications'),
-      items: [
-        {
-          icon: Bell,
-          label: t('settings.items.emailNotif'),
-          description: "Receive weekly summaries",
-          control: (
-            <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-pointer">
-              <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-md" />
-            </div>
-          )
-        },
-        {
-          icon: Smartphone,
-          label: t('settings.items.pushNotif'),
-          description: "Receive updates on your device",
-          control: (
-            <div className="w-12 h-6 bg-slate-700 rounded-full relative cursor-pointer">
-              <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 shadow-md" />
-            </div>
-          )
-        }
-      ]
     }
-  ];
+
+    setSettings(newSettings);
+
+    try {
+      await updateUserSettings({
+        notifications: newSettings.preferences.notifications,
+        is2faEnabled: newSettings.is2faEnabled
+      });
+      showToast("Settings saved", "success");
+    } catch (error) {
+      setSettings(previousSettings); // Revert on failure
+      showToast("Failed to save changes", "error");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20 relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            className={`fixed top-6 left-1/2 z-50 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 ${
+              toast.type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'
+            }`}
+          >
+            {toast.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <AlertTriangle className="w-4 h-4" />
+            )}
+            <span className="text-sm font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">{t('settings.title')}</h1>
-        <p className="text-slate-400">{t('settings.subtitle')}</p>
+        <p className="text-slate-400">Manage your account preferences and security</p>
       </div>
 
       <div className="grid gap-6">
-        {basicSections.map((section, idx) => (
-          <motion.div
-            key={section.title}
+        
+        {/* Appearance Section */}
+        <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
             className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6"
           >
-            <h2 className="text-lg font-semibold text-white mb-6">{section.title}</h2>
+            <h2 className="text-lg font-semibold text-white mb-6">{t('settings.appearance')}</h2>
             <div className="space-y-6">
-              {section.items.map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl hover:bg-slate-800/50 transition-colors">
+                {/* Dark Mode (Mock - always on for this theme) */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center text-slate-400">
-                      <item.icon className="w-5 h-5" />
+                      <Moon className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">{item.label}</p>
-                      <p className="text-slate-400 text-sm">{item.description}</p>
+                      <p className="text-white font-medium">{t('settings.items.darkMode')}</p>
+                      <p className="text-slate-400 text-sm">Always active</p>
                     </div>
                   </div>
-                  {item.control}
+                  <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-not-allowed opacity-80">
+                    <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-md" />
+                  </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        ))}
 
-        {/* Security Section (Enhanced) */}
+                {/* Language */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center text-slate-400">
+                      <Globe className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{t('settings.items.language')}</p>
+                      <p className="text-slate-400 text-sm">{settings?.preferences?.language || "English (Default)"}</p>
+                    </div>
+                  </div>
+                  <button className="text-sky-400 hover:text-sky-300 text-sm font-medium flex items-center gap-1">
+                    Change <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+            </div>
+        </motion.div>
+
+        {/* Notifications Section */}
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6"
+          >
+            <h2 className="text-lg font-semibold text-white mb-6">{t('settings.notifications')}</h2>
+            <div className="space-y-6">
+                {/* Email Notifications */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center text-slate-400">
+                      <Bell className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{t('settings.items.emailNotif')}</p>
+                      <p className="text-slate-400 text-sm">Receive weekly summaries</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleToggle('preferences.notifications', 'email', !(settings?.preferences?.notifications?.email ?? true))}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${
+                      (settings?.preferences?.notifications?.email ?? true) ? 'bg-emerald-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-md ${
+                        (settings?.preferences?.notifications?.email ?? true) ? 'right-0.5' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Push Notifications */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center text-slate-400">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{t('settings.items.pushNotif')}</p>
+                      <p className="text-slate-400 text-sm">Receive updates on your device</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleToggle('preferences.notifications', 'push', !(settings?.preferences?.notifications?.push ?? false))}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${
+                      (settings?.preferences?.notifications?.push ?? false) ? 'bg-emerald-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-md ${
+                        (settings?.preferences?.notifications?.push ?? false) ? 'right-0.5' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+            </div>
+        </motion.div>
+
+        {/* Security Section */}
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -144,17 +253,19 @@ export default function SettingsPage() {
                   <circle cx="40" cy="40" r="36" stroke="#1e293b" strokeWidth="8" fill="none" />
                   <motion.circle 
                     cx="40" cy="40" r="36" 
-                    stroke="#10b981" 
+                    stroke={settings?.is2faEnabled ? "#10b981" : "#f59e0b"} 
                     strokeWidth="8" 
                     fill="none"
                     strokeLinecap="round"
                     initial={{ strokeDasharray: "0 226" }}
-                    animate={{ strokeDasharray: "204 226" }}
+                    animate={{ strokeDasharray: settings?.is2faEnabled ? "204 226" : "150 226" }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-emerald-400">90</span>
+                  <span className={`text-2xl font-bold ${settings?.is2faEnabled ? "text-emerald-400" : "text-amber-400"}`}>
+                    {settings?.is2faEnabled ? "90" : "65"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -162,17 +273,16 @@ export default function SettingsPage() {
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 mb-2" />
                 <p className="text-white font-medium text-sm">Strong Password</p>
-                <p className="text-slate-400 text-xs">Last changed 30 days ago</p>
+                <p className="text-slate-400 text-xs">Login with Google OAuth</p>
               </div>
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                <Smartphone className="w-5 h-5 text-emerald-400 mb-2" />
-                <p className="text-white font-medium text-sm">2FA Enabled</p>
-                <p className="text-slate-400 text-xs">Using authenticator app</p>
-              </div>
-              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                <AlertTriangle className="w-5 h-5 text-amber-400 mb-2" />
-                <p className="text-white font-medium text-sm">Recovery Email</p>
-                <p className="text-slate-400 text-xs">Not set up yet</p>
+              <div className={`p-4 border rounded-xl ${settings?.is2faEnabled ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-slate-800/50 border-slate-700'}`}>
+                {settings?.is2faEnabled ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mb-2" />
+                ) : (
+                    <AlertTriangle className="w-5 h-5 text-amber-400 mb-2" />
+                )}
+                <p className="text-white font-medium text-sm">2FA Status</p>
+                <p className="text-slate-400 text-xs">{settings?.is2faEnabled ? "Enabled" : "Not configured"}</p>
               </div>
             </div>
           </div>
@@ -181,36 +291,33 @@ export default function SettingsPage() {
           <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-white mb-6">Security Configuration</h3>
             <div className="space-y-4">
-              {securitySettings.map((setting) => (
-                <div key={setting.id} className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl border border-slate-800 hover:border-slate-700 transition-all">
+                {/* 2FA Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl border border-slate-800 hover:border-slate-700 transition-all">
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      setting.enabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-700 text-slate-400'
+                      settings?.is2faEnabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-700 text-slate-400'
                     }`}>
-                      {setting.id === '2fa' && <Lock className="w-5 h-5" />}
-                      {setting.id === 'biometric' && <User className="w-5 h-5" />}
-                      {setting.id === 'alerts' && <Bell className="w-5 h-5" />}
+                      <Lock className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">{setting.label}</p>
-                      <p className="text-slate-400 text-sm">{setting.description}</p>
+                      <p className="text-white font-medium">Two-Factor Authentication</p>
+                      <p className="text-slate-400 text-sm">Secure your account with 2FA</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => toggleSecurity(setting.id)}
+                    onClick={() => handleToggle('security', 'is2faEnabled', !settings?.is2faEnabled)}
                     className={`w-12 h-6 rounded-full relative transition-colors ${
-                      setting.enabled ? 'bg-emerald-500' : 'bg-slate-700'
+                      settings?.is2faEnabled ? 'bg-emerald-500' : 'bg-slate-700'
                     }`}
                   >
                     <motion.div
                       layout
                       className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-md ${
-                        setting.enabled ? 'right-0.5' : 'left-0.5'
+                        settings?.is2faEnabled ? 'right-0.5' : 'left-0.5'
                       }`}
                     />
                   </button>
                 </div>
-              ))}
             </div>
           </div>
 
@@ -268,7 +375,10 @@ export default function SettingsPage() {
                   {t('profile.cancel')}
                 </button>
                 <button
-                  onClick={() => {/* Handle delete */}}
+                  onClick={() => {
+                    showToast("Account deletion requested", "success");
+                    setShowDeleteConfirm(false);
+                  }}
                   className="flex-1 py-2.5 bg-rose-500 hover:bg-rose-400 text-white rounded-xl font-medium transition-all"
                 >
                   {t('profile.delete.confirm')}

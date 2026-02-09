@@ -16,9 +16,23 @@ class User(Base):
     role = Column(String, default="USER")  # USER, ADMIN, ANALYST
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Settings & Preferences
+    is_2fa_enabled = Column(Boolean, default=False)
+    preferences = Column(JSON, default={})  # {notifications: {email: true, push: false}, theme: "dark", language: "en"}
+    
     # Relationships
     scans = relationship("Scan", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+
+
+class SystemSetting(Base):
+    """Global system configuration (Admin only)"""
+    __tablename__ = "system_settings"
+    
+    key = Column(String, primary_key=True)  # e.g., "maintenance_mode", "allow_registration"
+    value = Column(JSON, nullable=False)
+    description = Column(String)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Scan(Base):

@@ -9,7 +9,8 @@ import {
   Settings, 
   FileText, 
   LogOut,
-  Shield
+  Shield,
+  Activity
 } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -109,9 +110,24 @@ export default function AdminSidebar() {
               : 'text-slate-400 hover:text-sky-400 hover:bg-sky-900/10'
           }`}
         >
-          <Settings className="w-5 h-5" />
-          <span>System</span>
+          <Activity className="w-5 h-5" />
+          <span>Monitoring</span>
           {isActive('/admin/system') && (
+            <div className="ml-auto w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
+          )}
+        </Link>
+
+        <Link 
+          href="/admin/settings" 
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
+            isActive('/admin/settings')
+              ? 'text-sky-400 bg-sky-900/10' 
+              : 'text-slate-400 hover:text-sky-400 hover:bg-sky-900/10'
+          }`}
+        >
+          <Settings className="w-5 h-5" />
+          <span>Settings</span>
+          {isActive('/admin/settings') && (
             <div className="ml-auto w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
           )}
         </Link>
