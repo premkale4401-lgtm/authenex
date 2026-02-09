@@ -190,7 +190,19 @@ export default function AuthenexChatWidget() {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.detail || data.message || "Something went wrong");
+        let errorMessage = "Something went wrong";
+        if (data && data.detail) {
+          if (typeof data.detail === "string") {
+            errorMessage = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errorMessage = data.detail[0]?.msg || JSON.stringify(data.detail);
+          } else {
+            errorMessage = JSON.stringify(data.detail);
+          }
+        } else if (data && data.message) {
+          errorMessage = data.message;
+        }
+        throw new Error(errorMessage);
       }
 
       const botMsg: Message = { role: "model", text: data.response };
@@ -223,8 +235,12 @@ export default function AuthenexChatWidget() {
             <div className="p-4 bg-slate-900/50 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-                     <Bot className="w-6 h-6 text-white" />
+                   <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg shadow-emerald-500/20">
+                     <img 
+                       src="/assets/chatbot-logo.png" 
+                       alt="Chatbot Logo" 
+                       className="w-full h-full object-cover animate-spin [animation-duration:12s]" 
+                     />
                    </div>
                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
                 </div>
@@ -340,12 +356,17 @@ export default function AuthenexChatWidget() {
           animate={{ scale: 1, rotate: 0 }}
           whileHover={{ scale: 1.1, rotate: 10 }}
           whileTap={{ scale: 0.9 }}
-          className="group relative flex items-center justify-center w-14 h-14 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-full shadow-2xl shadow-sky-500/30 hover:shadow-sky-500/50 transition-all z-50 overflow-hidden"
+          className="group relative flex items-center justify-center w-14 h-14 rounded-full shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all z-50 overflow-hidden"
         >
           {/* Shine Effect */}
           <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
           
-          <Bot className="w-7 h-7 text-white relative z-10" />
+          {/* ChatGPT Flower Logo - Rotating */}
+          <img 
+            src="/assets/chatbot-logo.png" 
+            alt="Chatbot Logo" 
+            className="w-full h-full object-cover relative z-10 animate-spin [animation-duration:12s]" 
+          />
           
           {/* Online Indicator Dot */}
           <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-emerald-400 border-2 border-indigo-600 rounded-full z-20"></span>

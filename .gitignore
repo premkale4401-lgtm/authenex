@@ -2,6 +2,10 @@
 .env
 .env.local
 .env.*.local
+env/
+*.pem
+*.key
+credentials.json
 
 # Dependency directories
 node_modules/
@@ -36,3 +40,9 @@ lerna-debug.log*
 *.ntvs*
 *.njsproj
 *.sln
+# Backend specific
+backend/__pycache__/
+backend/*.db
+backend/.env
+backend/venv/
+backend/.venv/

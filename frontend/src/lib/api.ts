@@ -1,7 +1,6 @@
 // Updated API library - Consumes Python Backend with JWT Authentication
 
 import { getSession } from 'next-auth/react';
-import { createBackendToken } from './jwt-helper';
 
 const toBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -24,13 +23,13 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     throw new Error('Authentication required. Please log in.');
   }
 
-  // Create JWT token for backend
-  const token = createBackendToken({
-    id: (session.user as any).uid || (session.user as any).id,
-    email: session.user.email,
-    name: session.user.name,
-    role: (session.user as any).role,
-  });
+  // Use the pre-signed token from the session
+  const token = (session as any).authToken;
+
+  if (!token) {
+    console.error('❌ Backend authentication token not found in session');
+    throw new Error('Authentication failed: Missing backend token');
+  }
 
   return {
     'Authorization': `Bearer ${token}`,
@@ -38,7 +37,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 
-export const analyzeAsset = async (file: File, modality: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT') => {
+export const analyzeAsset = async (file: File, modality: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'TEXT' | 'EMAIL') => {
   try {
     console.log(`📤 Starting ${modality} analysis...`, file.name);
 
@@ -91,10 +90,14 @@ export const analyzeDocument = (file: File) => analyzeAsset(file, 'DOCUMENT');
 export const analyzeText = async (text: string) => {
     const blob = new Blob([text], { type: 'text/plain' });
     const file = new File([blob], "text_analysis.txt", { type: "text/plain" });
-    return analyzeAsset(file, 'DOCUMENT');
+    return analyzeAsset(file, 'TEXT');
 };
 
-export const analyzeEmail = async (email: string) => analyzeText(email);
+export const analyzeEmail = async (email: string) => {
+    const blob = new Blob([email], { type: 'text/plain' });
+    const file = new File([blob], "email_analysis.txt", { type: "text/plain" });
+    return analyzeAsset(file, 'EMAIL');
+};
 
 export const getScanHistory = async () => {
   try {

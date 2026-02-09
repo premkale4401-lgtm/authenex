@@ -23,7 +23,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { analyzeImage, analyzeVideo, analyzeAudio, analyzeDocument } from "@/lib/api";
+import { analyzeImage, analyzeVideo, analyzeAudio, analyzeDocument, analyzeText, analyzeEmail } from "@/lib/api";
 import { useAnalysis } from "@/context/AnalysisContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -51,6 +51,7 @@ export default function AnalyzePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [textContent, setTextContent] = useState("");
   const { setAnalysis } = useAnalysis();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -109,11 +110,21 @@ export default function AnalyzePage() {
            if (files.length > 0) data = await analyzeDocument(files[0]);
            break;
         case "text":
-          // Assuming there's a text input state elsewhere, or we handle file as text source
-          // For now, let's keep it simple or prompt user - implementing generic fallback
-           break;
+          if (textContent) {
+            data = await analyzeText(textContent);
+          } else if (files.length > 0) {
+            const content = await files[0].text();
+            data = await analyzeText(content);
+          }
+          break;
         case "email":
-           break;
+          if (textContent) {
+            data = await analyzeEmail(textContent);
+          } else if (files.length > 0) {
+            const content = await files[0].text();
+            data = await analyzeEmail(content);
+          }
+          break;
         default:
           break;
       }
@@ -321,7 +332,58 @@ export default function AnalyzePage() {
       {/* Upload Area */}
       <AnimatePresence mode="wait">
 
-        {!isAnalyzing && !results && (
+        {!isAnalyzing && !results && (selectedType === 'text' || selectedType === 'email' ? (
+          <motion.div
+            key="text-input-area"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+          >
+            <div className="relative group">
+              <textarea
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                placeholder={selectedType === 'text' ? "Paste AI generated text here for forensic analysis..." : "Paste full email content (including headers if available) for phishing analysis..."}
+                className="w-full h-80 p-8 bg-slate-900/50 border-2 border-slate-700 rounded-2xl text-white focus:border-sky-500 focus:bg-sky-500/5 outline-none transition-all resize-none shadow-inner"
+              />
+              <div className="absolute top-4 right-4 text-slate-500 group-hover:text-slate-400 transition-colors">
+                {selectedType === 'email' ? <Mail className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center px-2">
+              <div className="flex gap-4 text-xs text-slate-500">
+                <span>{textContent.length} characters</span>
+                <span>~{Math.round(textContent.split(/\s+/).length)} words</span>
+              </div>
+              <button 
+                onClick={() => setTextContent("")}
+                className="text-xs text-slate-400 hover:text-white transition-colors underline underline-offset-4"
+              >
+                Clear Input
+              </button>
+            </div>
+
+            <button
+              onClick={startAnalysis}
+              disabled={isAnalyzing || (!textContent && files.length === 0)}
+              className="w-full py-4 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-sky-400 hover:to-indigo-500 transition-all shadow-lg shadow-sky-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Analyzing Text...
+                </>
+              ) : (
+                <>
+                  Start Text Forensic Scan
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </motion.div>
+        ) : (
           <motion.div
             key="upload-area"
             initial={{ opacity: 0, y: 20 }}
@@ -410,7 +472,8 @@ export default function AnalyzePage() {
               </motion.div>
             )}
           </motion.div>
-        )}
+        )
+      )}
 
         {/* Analysis Progress - Scanning Animation */}
         {isAnalyzing && (

@@ -251,9 +251,8 @@ export default function SignIn() {
         >
           <motion.div variants={fadeInUp} className="mb-6 xl:mb-10">
             <Link href="/" className="inline-flex items-center gap-3 xl:gap-4 group">
-              <div className="w-10 h-10 xl:w-12 xl:h-12 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all duration-500 relative overflow-hidden ring-1 ring-white/20">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                <Shield className="w-6 h-6 xl:w-7 xl:h-7 text-white relative z-10 drop-shadow-md" />
+              <div className="w-14 h-14 xl:w-16 xl:h-16 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all duration-500 relative overflow-hidden ring-1 ring-white/20">
+                <img src="https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg" alt="Authenex" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl xl:text-2xl font-bold text-white tracking-tight leading-none group-hover:scale-105 transition-transform duration-300 origin-left">
@@ -336,7 +335,7 @@ export default function SignIn() {
           transition={{ duration: 0.6, ease: "circOut", delay: 0.2 }}
           className="w-full max-w-[380px] xl:max-w-md my-auto"
         >
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-[1.5rem] p-6 sm:p-8 xl:p-10 shadow-2xl relative overflow-hidden group/card hover:border-slate-600/50 transition-colors duration-500">
+          <div className="bg-slate-950/10 backdrop-blur-2xl border border-white/10 rounded-[1.5rem] p-6 sm:p-8 xl:p-10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] relative overflow-hidden group/card hover:border-white/20 transition-colors duration-500">
             
             {/* Gradient Border Effect */}
             <div className="absolute inset-0 rounded-[1.5rem] p-[1px] bg-gradient-to-br from-white/10 via-white/5 to-transparent pointer-events-none" />

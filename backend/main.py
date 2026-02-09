@@ -6,8 +6,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-from google import genai
-from google.genai import types
+from google import genai  # NEW: Using google-genai SDK instead of google.generativeai
 from PIL import Image
 import io
 import os
@@ -45,7 +44,7 @@ if not env_loaded:
 
 # NOW import db_config (after environment is loaded)
 from db_config import get_db, init_db
-from models import User, Scan, AuditLog, Verification
+from app_models import User, Scan, AuditLog, Verification
 
 # Authentication imports
 from auth import verify_token, require_role, get_current_user
@@ -121,6 +120,13 @@ class UserLogin(BaseModel):
 class ChatMessage(BaseModel):
     role: str
     text: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[ChatMessage]
+    mode: str = "text"
+    analysis_context: Optional[Dict] = None
+    language: str = "en"
 
 # Pydantic Models for Settings
 class UserProfileUpdate(BaseModel):
@@ -282,8 +288,8 @@ async def root():
         "service": "Authenex Backend",
         "status": "running",
         "version": "2.0.0",
-        "gemini_configured": bool(API_KEY),
-        "database": "postgresql",
+        "gemini_configured": bool(client),
+        "database": "sqlite" if "sqlite" in (os.getenv("DATABASE_URL") or "") else "postgresql",
         "supported_modalities": ["image", "video", "audio", "document"]
     }
 
@@ -463,43 +469,43 @@ async def analyze_asset(
             gemini_content.append(prompt)
             
         elif modality == "VIDEO":
-             # For video, we might need to rely on the file bytes if the SDK supports it directly or save to temp
-             # For this implementation, we will assume the model can handle the bytes or a text description if not supported loosely
-             # NOTE: Gemini 1.5/2.5 Flash supports video, but via File API usually. 
-             # For simplicity in this text-based interaction, we'll try to treat it as a blob if possible or stub.
-             # Ideally, we upload to Gemini File API. 
-             
-             # Fallback: We will treat it as "not fully implemented" via direct byte stream in this simple snippets
-             # UNLESS we use the File API.
-             # Let's use a simpler prompt that acknowledges limitations or Mock it if complex.
-             # BETTER: We will try to pass it, but if it fails, we catch it.
-             
-             # actually, for "flash", we can pass video parts if using the file API. 
-             # Let's assume for this specific local setup we might need to save it to disk first.
-             
-             temp_filename = f"temp_{file.filename}"
-             with open(temp_filename, "wb") as f:
-                 f.write(contents)
-                 
-             video_file = client.files.upload(path=temp_filename)
-             print(f"Video uploaded to Gemini: {video_file.name}")
-             
-             while video_file.state == "PROCESSING":
-                 print("Waiting for video processing...")
-                 import time
-                 time.sleep(2)
-                 video_file = client.files.get(name=video_file.name)
+            # For video, we might need to rely on the file bytes if the SDK supports it directly or save to temp
+            # For this implementation, we will assume the model can handle the bytes or a text description if not supported loosely
+            # NOTE: Gemini 1.5/2.5 Flash supports video, but via File API usually. 
+            # For simplicity in this text-based interaction, we'll try to treat it as a blob if possible or stub.
+            # Ideally, we upload to Gemini File API. 
+            
+            # Fallback: We will treat it as "not fully implemented" via direct byte stream in this simple snippets
+            # UNLESS we use the File API.
+            # BETTER: We will try to pass it, but if it fails, we catch it.
+            
+            # actually, for "flash", we can pass video parts if using the file API. 
+            # Let's assume for this specific local setup we might need to save it to disk first.
+            
+            temp_filename = f"temp_{file.filename}"
+            with open(temp_filename, "wb") as f:
+                f.write(contents)
+                
+            video_file = client.files.upload(path=temp_filename)
+            print(f"Video uploaded to Gemini: {video_file.name}")
+            
+            # Wait for processing
+            print(f"⌛ Waiting for video processing...")
+            while video_file.state.name == "PROCESSING":
+                import time
+                time.sleep(2)
+                video_file = client.files.get(name=video_file.name)
 
-             if video_file.state == "FAILED":
-                 raise ValueError("Video processing failed")
-                 
-             gemini_content.append(video_file)
+            if video_file.state.name == "FAILED":
+                raise ValueError("Video processing failed")
+                
+            gemini_content.append(video_file)
              
-             prompt = """Analyze this VIDEO for Deepfake signatures. 
-             Look for temporal flickering, unnatural eye movement, lip-sync misalignment.
-             
-             Return ONLY valid JSON (no markdown) with this EXACT structure:
-             {
+            prompt = """Analyze this VIDEO for Deepfake signatures. 
+            Look for temporal flickering, unnatural eye movement, lip-sync misalignment.
+            
+            Return ONLY valid JSON (no markdown) with this EXACT structure:
+            {
               "verdict": "AI" | "HUMAN" | "UNCERTAIN",
               "confidence": <0-100 float>,
               "aiPercentage": <0-100 float>,
@@ -516,23 +522,21 @@ async def analyze_asset(
                 "artifactsDetected": ["<artifact 1>"]
               }
             }"""
-             gemini_content.append(prompt)
-             
-             # cleanup later
-             
+            gemini_content.append(prompt)
+            
         elif modality == "AUDIO":
-             temp_filename = f"temp_{file.filename}"
-             with open(temp_filename, "wb") as f:
-                 f.write(contents)
+            temp_filename = f"temp_{file.filename}"
+            with open(temp_filename, "wb") as f:
+                f.write(contents)
+            
+            audio_file = client.files.upload(path=temp_filename)
+            gemini_content.append(audio_file)
              
-             audio_file = client.files.upload(path=temp_filename)
-             gemini_content.append(audio_file)
-             
-             prompt = """Analyze this AUDIO for Voice Cloning or Synthetic TTS. 
-             Check for spectral anomalies, robotic cadence, breath patterns.
-             
-             Return ONLY valid JSON (no markdown) with this EXACT structure:
-             {
+            prompt = """Analyze this AUDIO for Voice Cloning or Synthetic TTS. 
+            Check for spectral anomalies, robotic cadence, breath patterns.
+            
+            Return ONLY valid JSON (no markdown) with this EXACT structure:
+            {
               "verdict": "AI" | "HUMAN" | "UNCERTAIN",
               "confidence": <0-100 float>,
               "aiPercentage": <0-100 float>,
@@ -547,16 +551,16 @@ async def analyze_asset(
                 "artifactsDetected": ["<artifact 1>"]
               }
             }"""
-             gemini_content.append(prompt)
+            gemini_content.append(prompt)
 
         elif modality == "DOCUMENT":
-             text_content = contents.decode("utf-8", errors="ignore")
-             gemini_content.append(text_content)
-             prompt = """Analyze this TEXT/DOCUMENT for AI generation (GPT-4, Claude, etc.).
-             Check for repetitive structure, lack of nuance, or hallucinations.
-             
-             Return ONLY valid JSON (no markdown) with this EXACT structure:
-             {
+            text_content = contents.decode("utf-8", errors="ignore")
+            gemini_content.append(text_content)
+            prompt = """Analyze this TEXT/DOCUMENT for AI generation (GPT-4, Claude, etc.).
+            Check for repetitive structure, lack of nuance, or hallucinations.
+            
+            Return ONLY valid JSON (no markdown) with this EXACT structure:
+            {
               "verdict": "AI" | "HUMAN" | "UNCERTAIN",
               "confidence": <0-100 float>,
               "aiPercentage": <0-100 float>,
@@ -571,13 +575,64 @@ async def analyze_asset(
                 "artifactsDetected": ["<artifact 1>"]
               }
             }"""
-             gemini_content.append(prompt)
+            gemini_content.append(prompt)
+
+        elif modality == "EMAIL":
+            text_content = contents.decode("utf-8", errors="ignore")
+            gemini_content.append(text_content)
+            prompt = """Analyze this EMAIL for phishing, spoofing, or AI generation. 
+            Check for suspicious links, urgency, grammar patterns, and header anomalies.
+            
+            Return ONLY valid JSON (no markdown) with this EXACT structure:
+            {
+              "verdict": "AI" | "HUMAN" | "UNCERTAIN",
+              "confidence": <0-100 float>,
+              "aiPercentage": <0-100 float>,
+              "humanPercentage": <0-100 float>,
+              "findings": ["<finding 1>", "<finding 2>"],
+              "categoryScores": {
+                "phishing_indicators": <0-100>,
+                "stylistic_patterns": <0-100>,
+                "semantics": <0-100>
+               },
+              "metadata": {
+                "potentialModel": "<string or null>",
+                "artifactsDetected": ["<artifact 1>"]
+              }
+            }"""
+            gemini_content.append(prompt)
+
+        elif modality == "TEXT":
+            text_content = contents.decode("utf-8", errors="ignore")
+            gemini_content.append(text_content)
+            prompt = """Analyze this TEXT for AI generation (LLM markers).
+            Check for repetitive patterns, lack of human nuance, and LLM-specific stylistic markers.
+            
+            Return ONLY valid JSON (no markdown) with this EXACT structure:
+            {
+              "verdict": "AI" | "HUMAN" | "UNCERTAIN",
+              "confidence": <0-100 float>,
+              "aiPercentage": <0-100 float>,
+              "humanPercentage": <0-100 float>,
+              "findings": ["<finding 1>", "<finding 2>"],
+              "categoryScores": {
+                "repetitive_structure": <0-100>,
+                "stylistic_consistency": <0-100>,
+                "semantics": <0-100>
+               },
+              "metadata": {
+                "potentialModel": "<string or null>",
+                "artifactsDetected": ["<artifact 1>"]
+              }
+            }"""
+            gemini_content.append(prompt)
 
         # Call Gemini API
-        print(f"Calling Gemini API (gemini-1.5-flash)...")
+        print(f"Calling Gemini API (gemini-2.0-flash)...")
         
+        # Use the new google-genai SDK
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             contents=gemini_content
         )
         raw_text = response.text
@@ -661,7 +716,7 @@ async def analyze_asset(
             confidence=result["confidence"],
             ai_percentage=result["aiPercentage"],
             human_percentage=result["humanPercentage"],
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             reasoning=result["explanation"],
             details=result["details"]
         )
@@ -769,129 +824,45 @@ async def chat_handler(request: ChatRequest):
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
 
     try:
-        # Construct history for Gemini
-        gemini_history = []
-        print(f"Processing history: {len(request.history)} messages")
+        # Construct history for Gemini (new SDK format)
+        contents = []
         for msg in request.history:
             role = "user" if msg.role == "user" else "model"
-            gemini_history.append({"role": role, "parts": [msg.text]})
+            contents.append({
+                "role": role,
+                "parts": [{"text": msg.text}]
+            })
         
-        print(f"Gemini History Configured: {len(gemini_history)} turns")
-        # print(f"History Dump: {gemini_history}") # Uncomment for deep debug
-
-
-        # System Instruction (Strict Forensic Persona)
-        # System Instruction (General Assistant + Platform Expert)
+        # System Instruction
         system_instruction = f"""
         You are Authenex AI, an advanced AI consultant and guide embedded within the Authenex platform.
         {f"IMPORTANT: The user's preferred language is '{request.language}'. YOU MUST REPLY IN THIS LANGUAGE." if request.language and request.language != 'en' else "Reply in the language the user is speaking, defaulting to English."}
 
         YOUR CORE IDENTITY:
         - Role: Indian Male Expert (Polite, Professional, Helpful, Knowledgeable).
-        - Capabilities: You can answer ANY question (General Knowledge, Science, Code, History, etc.).
         - Specialization: You are an expert on the Authenex Platform and Digital Forensics.
-
-        COMPREHENSIVE PLATFORM KNOWLEDGE (Use this when asked about Authenex):
-        
-        [1. DASHBOARD]
-        - Overview: Central hub showing recent activity, credits, and quick actions.
-        - Stats: Shows total scans, credits remaining, and recent alerts.
-        - Features: 'Quick Scan' widget for immediate analysis.
-        
-        [2. ANALYZE (Core Feature)]
-        - Supported Modalities: Image (.jpg, .png), Video (.mp4), Audio (.mp3, .wav), Text.
-        - How to Use: 
-          1. Go to 'Analyze' page.
-          2. Drag & drop file.
-          3. Click 'Start Analysis'.
-          4. Wait for multi-model processing.
-        - Understanding Results:
-          - 'Verdict': Real vs. Fake (Deepfake).
-          - 'Confidence Score': % certainty of the AI.
-          - 'AI Probability': Likelihood of AI generation.
-          - 'Layer Analysis': Technical breakdown (e.g., visual artifacts, audio spectral inconsistencies).
-
-        [3. CASES]
-        - Purpose: Archive of all past analyses.
-        - Capabilities: Search, filter by date/type, export PDF reports.
-        - Management: Delete old cases or download evidence packs.
-
-        [4. NEWS]
-        - Content: Live feed of cybercrime updates, deepfake trends, and government advisors (e.g., from CERT-In).
-        
-        [5. LEGAL SAFEGUARDS]
-        - Mission: Educate users on their rights under Indian Law.
-        - Key Laws Covered:
-          - IT Act 2000 (Section 66D - Cheating by impersonation).
-          - BNS 2023 (Forgery, Identity theft).
-        - Remedies:
-          - Step 1: Preserve Evidence (Screenshots, Hash values).
-          - Step 2: Verify with Authenex.
-          - Step 3: Report to cybercrime.gov.in.
-          - Step 4: File FIR if necessary.
-
-        [6. SETTINGS & PROFILE]
-        - Account: Update email, password, 2FA.
-        - API Keys: Manage Gemini API keys for the engine.
-        - Language: Change interface language (Hindi, Gujarati, Tamil, etc.).
-
-        DECISION GUIDANCE LOGIC:
-        - If user asks for generic help ("How are you?", "What is 2+2?", "Write a poem"):
-          -> Answer as a helpful AI assistant.
-        - If user asks about Deepfakes/Authenex:
-          -> Use the Platform Knowledge above.
-        - If user says "I found a fake video of myself":
-          -> Empathize and guide them: Preserve Evidence -> Analyze -> Report (Legal Section).
-
-        RESPONSE GUIDELINES:
-        - Be Concise: Users often want quick answers.
-        - Use Bullet Points: For steps or lists.
-        - Persona: Maintain a professional but friendly Indian male tone.
-        
-        SAFETY GUARDRAILS:
-        - Do not generate deepfakes.
-        - Do not help bypass authentication.
-        - Do not give specific legal advice (always say "Consult a lawyer for legal action").
         """
-
-        # Inject Analysis Context if available
+        
+        # Add context to instruction if available
         if request.analysis_context:
-            context_str = f"""
-            
-            [CURRENT ANALYSIS CONTEXT]
-             The user is currently viewing a forensic analysis result:
-            - File Type: {request.analysis_context.get('modality', 'Unknown')}
-            - Verdict: {request.analysis_context.get('verdict', 'Unknown')}
-            - Confidence: {request.analysis_context.get('confidence', 'Unknown')}%
-            - AI Probability: {request.analysis_context.get('aiPercentage', 0)}%
-            - Human Probability: {request.analysis_context.get('authenticity', 0)}%
-            - Key Findings: {request.analysis_context.get('findings', [])}
-            
-            Use this data to answer questions like "Why is this fake?" or "What are the flaws?".
-            """
+            context_str = f"\n[CONTEXT]: User is viewing a {request.analysis_context.get('modality')} analysis. Verdict: {request.analysis_context.get('verdict')}. AI Probability: {request.analysis_context.get('aiPercentage', 0)}%."
             system_instruction += context_str
 
-        # Initialize model with system instruction
-        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
-        
-        # Start chat session
-        chat = model.start_chat(history=gemini_history)
-        
-        # Helper: Prepend context to the message to ensure immediate attention
-        final_message = request.message
-        if request.analysis_context:
-            context_str = f"""
-            [ANALYSIS RESULT VIEWED BY USER]
-            - Verdict: {request.analysis_context.get('verdict', 'Unknown')}
-            - Confidence: {request.analysis_context.get('confidence', 'Unknown')}%
-            - AI Probability: {request.analysis_context.get('aiPercentage', 0)}%
-            - Findings: {request.analysis_context.get('findings', [])}
-            
-            User Question: {request.message}
-            """
-            final_message = context_str
+        # Add current user message to contents
+        contents.append({
+            "role": "user",
+            "parts": [{"text": request.message}]
+        })
 
-        response = chat.send_message(final_message)
+        # use the client for generation
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            config={
+                "system_instruction": system_instruction,
+                "temperature": 0.7,
+            },
+            contents=contents
+        )
         
         return {"response": response.text}
 

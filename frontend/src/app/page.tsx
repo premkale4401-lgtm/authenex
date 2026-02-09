@@ -67,8 +67,12 @@ export default function Home() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               {/* Left side - Brand */}
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">A</span>
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <img 
+                    src="https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg" 
+                    alt="Authenex Logo" 
+                    className="w-full h-full object-contain" 
+                  />
                 </div>
                 <div>
                   <p className="font-bold text-slate-200">{t("landing.nav.brand")}</p>

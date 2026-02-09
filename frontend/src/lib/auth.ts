@@ -1,9 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-
 import path from 'path';
 import dotenv from 'dotenv';
+import { createBackendToken } from "./jwt-helper";
 
 // Ensure env vars are loaded for server-side execution
 dotenv.config({ path: path.resolve(process.cwd(), '../env/.env') });
@@ -110,13 +110,23 @@ export const authOptions: NextAuthOptions = {
     
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).uid = token.id; // Add uid for backend compatibility
-        (session.user as any).role = token.role;
-        (session.user as any).clearanceLevel = token.clearanceLevel;
+        (session.user as any).id = token.id as string;
+        (session.user as any).uid = token.id as string;
+        (session.user as any).role = token.role as string;
+        (session.user as any).clearanceLevel = token.clearanceLevel as number;
+        
+        // Generate a signed token on the server where NEXTAUTH_SECRET is available
+        try {
+          (session as any).authToken = createBackendToken({
+            id: token.id as string,
+            email: session.user.email,
+            name: session.user.name,
+            role: token.role as string
+          });
+        } catch (error) {
+          console.error("Error generating authToken in session callback:", error);
+        }
       }
-      // Include the JWT token in session for backend authentication
-      (session as any).accessToken = token.sub; // Use sub claim as token identifier
       return session;
     },
     

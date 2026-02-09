@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
-from models import Base
+from app_models import Base
 
 # PRODUCTION SAFETY: Fail fast if DATABASE_URL not set
 DATABASE_URL = os.getenv("DATABASE_URL")

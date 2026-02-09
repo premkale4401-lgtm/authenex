@@ -80,8 +80,12 @@ export default function DashboardSidebar({
           <div className="h-24 flex items-center px-6 border-b border-slate-800/50 min-w-[288px] relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-r from-sky-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <Link href="/dashboard" className="flex items-center gap-4 relative z-10">
-              <div className="w-11 h-11 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-sky-500/20 ring-1 ring-white/10 group-hover:scale-105 transition-transform duration-300">
-                <Shield className="w-6 h-6 text-white" />
+              <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                <img 
+                  src="https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg" 
+                  alt="Authenex Logo" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
               {!collapsed && (
                 <motion.div

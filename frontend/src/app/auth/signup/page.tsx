@@ -283,9 +283,8 @@ export default function SignUpPage() {
         >
           <motion.div variants={fadeInUp} className="mb-6 xl:mb-10">
             <Link href="/" className="inline-flex items-center gap-3 xl:gap-4 group">
-              <div className="w-10 h-10 xl:w-12 xl:h-12 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all duration-500 relative overflow-hidden ring-1 ring-white/20">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                <Shield className="w-6 h-6 xl:w-7 xl:h-7 text-white relative z-10 drop-shadow-md" />
+              <div className="w-14 h-14 xl:w-16 xl:h-16 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all duration-500 relative overflow-hidden ring-1 ring-white/20">
+                <img src="https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg" alt="Authenex" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl xl:text-2xl font-bold text-white tracking-tight leading-none group-hover:scale-105 transition-transform duration-300 origin-left">

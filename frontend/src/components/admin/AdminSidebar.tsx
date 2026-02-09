@@ -30,8 +30,12 @@ export default function AdminSidebar() {
       {/* Logo Area */}
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <ShieldCheck className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img 
+              src="https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg" 
+              alt="Authenex Logo" 
+              className="w-full h-full object-contain" 
+            />
           </div>
           <div>
             <h1 className="font-bold text-lg tracking-tight text-white">AUTHENEX</h1>

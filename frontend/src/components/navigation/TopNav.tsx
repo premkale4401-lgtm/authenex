@@ -23,13 +23,6 @@ export default function TopNav() {
   const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const navLinks = session ? [
     { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
@@ -51,11 +44,7 @@ export default function TopNav() {
     <motion.nav 
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled 
-          ? "bg-slate-950/60 backdrop-blur-2xl border-b border-white/5 shadow-lg shadow-sky-500/5" 
-          : "bg-transparent"
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-gradient-to-b from-slate-950/40 via-slate-950/20 to-transparent backdrop-blur-md"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
@@ -64,9 +53,11 @@ export default function TopNav() {
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="relative">
               <div className="absolute inset-0 bg-sky-500 blur-lg opacity-40 group-hover:opacity-60 transition-opacity rounded-lg" />
-              <div className="relative w-9 h-9 bg-gradient-to-br from-sky-400 to-indigo-500 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src="https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg" 
+                alt="Authenex Logo" 
+                className="relative w-9 h-9 object-contain" 
+              />
             </div>
             <div>
               <span className="text-xl font-bold bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
