@@ -18,6 +18,9 @@ from sqlalchemy.orm import Session
 from db_config import get_db, init_db
 from models import User, Scan, AuditLog, Verification
 
+# Authentication imports
+from auth import verify_token, require_role, get_current_user
+
 # Load environment variables
 from pathlib import Path
 import sys
@@ -44,14 +47,23 @@ if not env_loaded:
 # Initialize FastAPI
 app = FastAPI(title="Authenex AI Analysis API", version="1.0.0")
 
-# CORS
+# SECURITY: CORS Configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+# SAFETY: Prevent wildcard CORS in production
+if "*" in ALLOWED_ORIGINS and ENVIRONMENT == "production":
+    raise RuntimeError("❌ FATAL: Wildcard CORS origins are forbidden in production")
+
+print(f"🔒 CORS Origins: {ALLOWED_ORIGINS}")
+
 app.add_middleware(
     CORSMiddleware,
-    # Allow local frontend dev server
-    allow_origins=["http://localhost:3000", "http://localhost:3001"], 
+    allow_origins=ALLOWED_ORIGINS,  # Explicit whitelist
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],  # Restrict methods
+    allow_headers=["Authorization", "Content-Type"],  # Explicit headers
+    max_age=3600,  # Cache preflight for 1 hour
 )
 
 # Configure Gemini
@@ -153,11 +165,28 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     return {"status": "success", "message": "User logged in"}
 
 @app.get("/history/{uid}")
-async def get_history(uid: str, db: Session = Depends(get_db)):
+async def get_history(
+    uid: str,
+    user: dict = Depends(verify_token),  # ✅ JWT required
+    db: Session = Depends(get_db)
+):
     """
-    Get scan history for a user
+    Get scan history for a user.
+    
+    Security:
+        - Requires valid JWT token
+        - Users can only access their own history
+        - Admins can access any user's history
     """
     print(f"Fetching history for: {uid}")
+    
+    # SECURITY: Verify user can only access their own history (unless admin)
+    user_role = user.get("role", "USER")
+    if uid != user["sub"] and user_role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: You can only access your own scan history"
+        )
     
     scans = db.query(Scan).filter(Scan.uid == uid).order_by(Scan.created_at.desc()).all()
     
@@ -181,14 +210,20 @@ async def get_history(uid: str, db: Session = Depends(get_db)):
 
 @app.post("/analyze", response_model=ForensicAnalysisResult)
 async def analyze_asset(
-    file: UploadFile = File(...), 
-    uid: str = "anonymous",
+    file: UploadFile = File(...),
     modality: str = "IMAGE",
+    user: dict = Depends(verify_token),  # ✅ JWT required
     db: Session = Depends(get_db)
 ):
     """
-    Analyze an asset (Image, Video, Audio, Document) for AI generation indicators
+    Analyze an asset (Image, Video, Audio, Document) for AI generation indicators.
+    
+    Security:
+        - Requires valid JWT token
+        - User ID extracted from JWT (cannot be forged)
+        - All uploads are attributed to authenticated users
     """
+    uid = user["sub"]  # Extract uid from JWT sub claim (secure)
     if not API_KEY:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
     
