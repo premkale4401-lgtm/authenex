@@ -111,9 +111,12 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
+        (session.user as any).uid = token.id; // Add uid for backend compatibility
         (session.user as any).role = token.role;
         (session.user as any).clearanceLevel = token.clearanceLevel;
       }
+      // Include the JWT token in session for backend authentication
+      (session as any).accessToken = token.sub; // Use sub claim as token identifier
       return session;
     },
     

@@ -13,18 +13,11 @@ import os
 import json
 import re
 from dotenv import load_dotenv
-# SQLAlchemy imports
-from sqlalchemy.orm import Session
-from db_config import get_db, init_db
-from models import User, Scan, AuditLog, Verification
-
-# Authentication imports
-from auth import verify_token, require_role, get_current_user
-
-# Load environment variables
 from pathlib import Path
+import os
 import sys
 
+# CRITICAL: Load environment variables BEFORE importing db_config
 # Try multiple paths to find .env file
 env_paths = [
     Path(__file__).parent.parent / 'env' / '.env',  # ../env/.env
@@ -36,13 +29,28 @@ env_paths = [
 env_loaded = False
 for env_path in env_paths:
     if env_path.exists():
-        print(f"Loading environment from: {env_path}")
+        print(f"✅ Loading environment from: {env_path}")
         load_dotenv(dotenv_path=env_path)
         env_loaded = True
+        # Debug: Check if DATABASE_URL is loaded
+        if os.getenv("DATABASE_URL"):
+            print(f"✅ DATABASE_URL loaded successfully")
+        else:
+            print(f"⚠️  DATABASE_URL not found in {env_path}")
         break
 
 if not env_loaded:
-    print(f"WARNING: Could not find .env file. Tried: {[str(p) for p in env_paths]}")
+    print(f"⚠️  WARNING: Could not find .env file. Tried: {[str(p) for p in env_paths]}")
+
+# NOW import db_config (after environment is loaded)
+from db_config import get_db, init_db
+from models import User, Scan, AuditLog, Verification
+
+# Authentication imports
+from auth import verify_token, require_role, get_current_user
+
+# SQLAlchemy session import
+from sqlalchemy.orm import Session
 
 # Initialize FastAPI
 app = FastAPI(title="Authenex AI Analysis API", version="1.0.0")
