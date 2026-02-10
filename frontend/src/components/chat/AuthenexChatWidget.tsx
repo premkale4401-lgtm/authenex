@@ -36,7 +36,7 @@ export default function AuthenexChatWidget() {
   }, [currentAnalysis, isOpen]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null); // Type 'any' for window.SpeechRecognition
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
   // Initialize Speech APIs safely (browser-only)
@@ -47,14 +47,16 @@ export default function AuthenexChatWidget() {
       window.addEventListener('open-chat', handleOpenChat);
 
       // Config STT
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // Use the standard property, falling back to webkit if needed (handled by our type defs now or simple check)
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = "en-US";
 
-        recognitionRef.current.onresult = (event: any) => {
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
           const transcript = event.results[0][0].transcript;
           setInput(transcript);
           setIsListening(false);
@@ -62,9 +64,22 @@ export default function AuthenexChatWidget() {
           handleSend(transcript, "voice");
         };
 
-        recognitionRef.current.onerror = (event: any) => {
+        recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error("Speech recognition error", event.error);
           setIsListening(false);
+          
+          if (event.error === 'network') {
+             // Optional: visual feedback to user
+             setMessages(prev => [...prev, { 
+               role: "model", 
+               text: "I'm having trouble hearing you due to a network issue. Please check your connection or try typing." 
+             }]);
+          }
+        };
+        
+        // Handle end event to ensure state is reset
+        recognitionRef.current.onend = () => {
+           setIsListening(false);
         };
       }
 
@@ -111,53 +126,6 @@ export default function AuthenexChatWidget() {
 
   // Voice & Navigation
   const router = useRouter();
-
-  const speakResponse = (text: string) => {
-    if (!synthRef.current) return;
-    
-    // Stop any current speech
-    synthRef.current.cancel();
-
-    // Clean text for speech (remove markdown and navigation tags)
-    let cleanText = text.replace(/\[\[NAVIGATE:.*?\]\]/g, ""); // Remove nav tags
-    cleanText = cleanText.replace(/[*#]/g, ""); // Remove markdown
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    // SMARTER VOICE SELECTION
-    // 1. Detect language of response (simple heuristic or passed from backend - for now assume shared lang context)
-    // 2. Try to match voice to that language
-    const voices = window.speechSynthesis.getVoices();
-    let selectedVoice = null;
-
-    // Heuristic: If text contains Devanagari, prefer Hindi voice
-    const hasHindiChars = /[\u0900-\u097F]/.test(cleanText);
-    
-    if (hasHindiChars) {
-       selectedVoice = voices.find(v => v.lang.includes('hi') || v.name.includes('Hindi'));
-    }
-    
-    // Fallback to Indian English or clear English
-    if (!selectedVoice) {
-       selectedVoice = voices.find(v => v.name.includes("Microsoft Mark")) 
-                     || voices.find(v => v.lang === 'en-IN' || v.lang.includes('en-IN'))
-                     || voices.find(v => v.name.includes('India'));
-    }
-
-    if (selectedVoice) {
-        utterance.voice = selectedVoice;
-    }
-
-    utterance.pitch = 1.0; 
-    utterance.rate = 1.1; 
-    utterance.volume = 1;
-    
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    synthRef.current.speak(utterance);
-  };
 
   const handleSend = async (messageText: string = input, mode: "text" | "voice" = isVoiceMode ? "voice" : "text") => {
     if (!messageText.trim()) return;
@@ -222,8 +190,6 @@ export default function AuthenexChatWidget() {
           
           // Execute Navigation
           router.push(targetPath);
-          
-          // If we navigated, maybe close chat on mobile? or keep open. Keeping open is better for guidance.
       }
 
       const botMsg: Message = { role: "model", text: botResponseText };
@@ -231,9 +197,8 @@ export default function AuthenexChatWidget() {
 
       // If voice mode or voice input was used, speak the response
       if (mode === "voice") {
-        speakResponse(botResponseText); // pass cleaned text logic inside speakResponse
+        speakResponse(botResponseText, data.language || "en"); 
       }
-
     } catch (error: any) {
       console.error("Chat error:", error);
       setMessages((prev) => [...prev, { role: "model", text: `Error: ${error.message || "Connection failed"}` }]);
@@ -241,6 +206,69 @@ export default function AuthenexChatWidget() {
       setIsLoading(false);
     }
   };
+
+  const speakResponse = (text: string, lang: string = "en") => {
+    if (!synthRef.current) return;
+    
+    synthRef.current.cancel();
+
+    let cleanText = text.replace(/\[\[NAVIGATE:.*?\]\]/g, "");
+    cleanText = cleanText.replace(/[*#]/g, "");
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Voice Selection Strategy:
+    // 1. Strict Language Match (e.g., 'hi-IN' for 'hi')
+    // 2. Broad Language Match (e.g., 'hi' in 'hi-IN')
+    // 3. Gender Preference: "Male" (Microsoft Mark, Google UK, etc. usually exist)
+    
+    let selectedVoice = null;
+    
+    // Normalize lang code (e.g., 'hi' -> 'hi')
+    const targetLang = lang.split('-')[0].toLowerCase();
+
+    // Filter by language first
+    const langVoices = voices.filter(v => v.lang.toLowerCase().startsWith(targetLang));
+    
+    if (langVoices.length > 0) {
+        // Try to find a male voice in the target language
+        // Common male keywords: "Male", "David", "Mark", "George"
+        const maleKeywords = ["Male", "David", "Mark", "George", "Ravi"]; 
+        selectedVoice = langVoices.find(v => maleKeywords.some(k => v.name.includes(k)));
+        
+        // If no specifically named male voice, just pick the first one (often the default high quality one)
+        if (!selectedVoice) {
+            selectedVoice = langVoices[0];
+        }
+    } else {
+        // Fallback: Check for specific "Indian English" if the target was 'hi' but no Hindi voice found
+        if (targetLang === 'hi') {
+             selectedVoice = voices.find(v => v.lang === 'en-IN' || v.name.includes('India'));
+        }
+    }
+    
+    // Default fallback to English if absolutely nothing matches
+    if (!selectedVoice) {
+         selectedVoice = voices.find(v => v.name.includes("Microsoft Mark")) || voices[0];
+    }
+
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        console.log(`🎙️ Speaking in ${selectedVoice.name} (${selectedVoice.lang}) for target ${lang}`);
+    }
+
+    utterance.pitch = 1.0; 
+    utterance.rate = 1.0; 
+    utterance.volume = 1;
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    synthRef.current.speak(utterance);
+  };
+
 
   return (
     <div className="fixed bottom-20 right-6 z-50 font-sans">

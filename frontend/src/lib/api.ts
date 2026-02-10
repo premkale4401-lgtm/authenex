@@ -217,3 +217,14 @@ export const updateSystemSetting = async (key: string, value: any, description?:
   if (!response.ok) throw new Error("Failed to update system setting");
   return await response.json();
 };
+
+export const deleteAccount = async () => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/user/me`, {
+    method: "DELETE",
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to delete account");
+  return await response.json();
+};

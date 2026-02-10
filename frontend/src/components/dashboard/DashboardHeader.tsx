@@ -52,12 +52,12 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="h-20 bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30 shadow-lg shadow-black/20">
+    <header className="h-20 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30 shadow-sm dark:shadow-lg dark:shadow-black/20 transition-colors">
       <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 to-transparent" />
       {/* Mobile Menu Button */}
       <button 
         onClick={() => setMobileMenuOpen(true)}
-        className="lg:hidden mr-4 p-2 text-slate-400 hover:text-white transition-colors"
+        className="lg:hidden mr-4 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
       >
         <Menu className="w-6 h-6" />
       </button>
@@ -66,16 +66,16 @@ export default function DashboardHeader({
       <div className="flex-1 max-w-2xl">
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-slate-400 group-focus-within:text-sky-400 transition-colors" />
+            <Search className="h-5 w-5 text-slate-400 group-focus-within:text-sky-500 transition-colors" />
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-20 py-2.5 border border-slate-700 rounded-xl leading-5 bg-slate-800/50 text-slate-100 placeholder-slate-400 focus:outline-none focus:bg-slate-800 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 transition-all sm:text-sm"
+            className="block w-full pl-10 pr-20 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl leading-5 bg-slate-100 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 transition-all sm:text-sm"
             placeholder={t('header.searchPlaceholder')}
             onClick={() => setSearchOpen(true)}
           />
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-400 bg-slate-800 border border-slate-700 rounded-lg">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
               <Command className="w-3 h-3" />
               <span>K</span>
             </kbd>
@@ -94,7 +94,7 @@ export default function DashboardHeader({
         <div className="relative">
           <button
             onClick={() => setNotifOpen(!notifOpen)}
-            className="relative p-2.5 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all"
+            className="relative p-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -181,11 +181,11 @@ export default function DashboardHeader({
         <div className="relative ml-2">
           <button 
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-3 pl-3 border-l border-slate-800 outline-none"
+            className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800 outline-none"
           >
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-white">{session?.user?.name || "Investigator"}</p>
-              <p className="text-xs text-slate-400">Forensic Analyst</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-white">{session?.user?.name || "Investigator"}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Forensic Analyst</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 p-0.5 cursor-pointer hover:scale-105 transition-transform">
               <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">

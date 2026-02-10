@@ -73,7 +73,7 @@ export default function DashboardSidebar({
           x: typeof window !== 'undefined' && window.innerWidth < 1024 ? (mobileMenuOpen ? 0 : -288) : 0
         }}
         transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-        className="fixed left-0 top-0 h-screen bg-gradient-to-b from-slate-900 via-[#0B1120] to-slate-950 border-r border-slate-800/50 z-50 flex flex-col lg:translate-x-0 shadow-2xl shadow-black/50"
+        className="fixed left-0 top-0 h-screen bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:via-[#0B1120] dark:to-slate-950 border-r border-slate-200 dark:border-slate-800/50 z-50 flex flex-col lg:translate-x-0 shadow-xl dark:shadow-2xl dark:shadow-black/50 transition-colors"
       >
         <div className="flex flex-col h-full w-full overflow-hidden">
           {/* Logo */}
@@ -93,7 +93,7 @@ export default function DashboardSidebar({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <span className="font-bold text-white text-xl tracking-tight">Authenex</span>
+                  <span className="font-bold text-slate-900 dark:text-white text-xl tracking-tight">Authenex</span>
                   <span className="block text-[10px] text-sky-400 uppercase tracking-widest font-semibold mt-0.5">TrustLens Intelligence</span>
                 </motion.div>
               )}
@@ -101,7 +101,7 @@ export default function DashboardSidebar({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-800">
+          <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -113,8 +113,8 @@ export default function DashboardSidebar({
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3.5 rounded-xl transition-all group relative overflow-hidden ${
                     isActive 
-                      ? "text-white" 
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/40"
+                      ? "text-sky-600 dark:text-white bg-sky-50 dark:bg-transparent" 
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40"
                   }`}
                 >
                   {isActive && (
@@ -141,7 +141,7 @@ export default function DashboardSidebar({
           </nav>
 
           {/* Bottom section */}
-          <div className="p-4 border-t border-slate-800/50 space-y-2 min-w-[288px] bg-slate-900/30">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800/50 space-y-2 min-w-[288px] bg-slate-50/50 dark:bg-slate-900/30">
             {bottomItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -149,7 +149,7 @@ export default function DashboardSidebar({
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all group hover:pl-4"
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all group hover:pl-4"
                 >
                   <Icon className="w-5 h-5 flex-shrink-0 group-hover:text-sky-400 transition-colors" />
                   {!collapsed && (
@@ -170,7 +170,7 @@ export default function DashboardSidebar({
         {/* Collapse button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-24 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-sky-500 hover:border-sky-500 transition-all z-50"
+          className="absolute -right-3 top-24 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-white hover:bg-sky-500 hover:border-sky-500 transition-all z-50 shadow-sm"
         >
           {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
         </button>

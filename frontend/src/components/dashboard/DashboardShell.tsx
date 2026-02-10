@@ -13,7 +13,7 @@ export default function DashboardShell({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="h-[100dvh] bg-[#020617] flex overflow-hidden">
+    <div className="h-[100dvh] bg-slate-50 dark:bg-[#020617] flex overflow-hidden transition-colors">
       <DashboardSidebar 
         collapsed={collapsed} 
         setCollapsed={setCollapsed}

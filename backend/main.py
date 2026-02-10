@@ -12,6 +12,7 @@ import io
 import os
 import json
 import re
+import requests  # NEW: For NewsData.io API
 from dotenv import load_dotenv
 from pathlib import Path
 import os
@@ -157,7 +158,29 @@ async def get_user_settings(
     """Fetch current user settings and profile"""
     db_user = db.query(User).filter(User.uid == user["sub"]).first()
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # AUTO-RECOVERY: User exists in Auth (JWT) but not in DB
+        # This handles cases where DB was reset or sync failed
+        print(f"♻️  Auto-recovering user from JWT: {user.get('email')}")
+        try:
+            # Try to create the user
+            new_user = User(
+                uid=user["sub"],
+                email=user.get("email"),
+                display_name=user.get("name"),
+                role=user.get("role", "USER")
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            db_user = new_user
+        except Exception:
+            # If creation fails (likely race condition), rollback and fetch existing
+            db.rollback()
+            db_user = db.query(User).filter(User.uid == user["sub"]).first()
+            
+            if not db_user:
+                # If still not found after rollback, something is wrong
+                raise HTTPException(status_code=500, detail="Failed to recover user profile")
     
     return {
         "uid": db_user.uid,
@@ -238,9 +261,20 @@ async def get_system_settings(
     db: Session = Depends(get_db)
 ):
     """Fetch all system configuration (Admin only)"""
-    from models import SystemSetting  # Local import to avoid circular dep if needed
-    settings = db.query(SystemSetting).all()
-    return {s.key: s.value for s in settings}
+    # Assuming SystemSetting is imported or available in models
+    # If not, import it locally to avoid circular dependency issues if any
+    try:
+        from models import SystemSetting
+    except ImportError:
+        # Fallback if models module structure is different
+        pass
+
+    try:
+        settings = db.query(SystemSetting).all()
+        return {s.key: s.value for s in settings}
+    except NameError:
+         #If SystemSetting is not defined/imported
+         return {}
 
 @app.put("/api/settings/system")
 async def update_system_setting(
@@ -249,8 +283,11 @@ async def update_system_setting(
     db: Session = Depends(get_db)
 ):
     """Update a specific system setting (Admin only)"""
-    from models import SystemSetting
-    
+    try:
+        from models import SystemSetting
+    except ImportError:
+        pass
+        
     db_setting = db.query(SystemSetting).filter(SystemSetting.key == setting.key).first()
     
     if not db_setting:
@@ -280,6 +317,35 @@ async def update_system_setting(
     
     return {"status": "success", "message": f"Setting '{setting.key}' updated"}
 
+@app.delete("/api/user/me")
+async def delete_account(
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    try:
+        uid = current_user["sub"]
+        
+        # Delete user scans
+        try:
+             db.query(Scan).filter(Scan.uid == uid).delete()
+        except:
+             pass
+
+        # Delete user audit logs
+        try:
+            db.query(AuditLog).filter(AuditLog.uid == uid).delete()
+        except:
+            pass
+
+        # Delete user
+        db.query(User).filter(User.uid == uid).delete()
+        
+        db.commit()
+        return {"status": "success", "message": "Account deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/")
 async def root():
@@ -301,20 +367,39 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     print(f"Login request: {user.uid}")
     
     # Check if user exists
+    # Check if user exists by UID
     db_user = db.query(User).filter(User.uid == user.uid).first()
     
     if not db_user:
-        # Create new user
-        db_user = User(
-            uid=user.uid,
-            email=user.email,
-            display_name=user.displayName,
-            photo_url=user.photoURL
-        )
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        print(f"✅ Created new user: {user.email}")
+        # Check if user exists by Email (to prevent IntegrityError)
+        existing_email_user = db.query(User).filter(User.email == user.email).first()
+        if existing_email_user:
+            # Case: User exists with same email but different UID (e.g., deleted and recreated or different auth provider)
+            # Update the existing user's UID to match current request
+            print(f"⚠️  User found by email {user.email} but mismatching UID. Updating UID.")
+            existing_email_user.uid = user.uid
+            existing_email_user.display_name = user.displayName
+            existing_email_user.photo_url = user.photoURL
+            db.commit()
+            db.refresh(existing_email_user)
+            db_user = existing_email_user
+        else:
+            # Create new user
+            try:
+                db_user = User(
+                    uid=user.uid,
+                    email=user.email,
+                    display_name=user.displayName,
+                    photo_url=user.photoURL
+                )
+                db.add(db_user)
+                db.commit()
+                db.refresh(db_user)
+                print(f"✅ Created new user: {user.email}")
+            except Exception as e:
+                db.rollback()
+                print(f"❌ Failed to create user: {e}")
+                raise HTTPException(status_code=500, detail="User creation failed")
     else:
         # Update existing user
         db_user.email = user.email
@@ -803,9 +888,94 @@ MOCK_NEWS = [
 @app.get("/api/news")
 async def get_news(category: str = "all", limit: int = 20):
     """
-    Get mock news data
+    Get live news data from NewsData.io or fallback to mock data
     """
     print(f"Fetching news for category: {category}")
+    
+    # 1. Try fetching from NewsData.io
+    newsdata_key = os.getenv("NEWSDATA_API_KEY")
+    if newsdata_key:
+        try:
+            print("🌍 Fetching live news from NewsData.io...")
+            # STRATEGY: Threat Intelligence & Public Awareness (STRICT MODE)
+            # 1. Fetch BROAD news using short keyword queries (avoids 422 error)
+            # 2. FILTER locally using strict risk keywords
+            
+            # Risk Keywords for Local Filtering
+            # News item MUST contain at least one of these to be shown
+            risk_keywords = [
+                'scam', 'fraud', 'crime', 'police', 'arrest', 'warning', 'ban', 'illegal', 
+                'victim', 'attack', 'hacker', 'breach', 'security', 'theft', 'deepfake'
+            ]
+            
+            # Short API Queries (Max 100 chars)
+            short_queries = {
+                "all": "deepfake OR cybercrime OR 'ai scam'",
+                "deepfake": "deepfake OR 'voice cloning'",
+                "cybercrime": "cybercrime OR phishing",
+                "government": "'ai regulation' OR 'it act'",
+                "ai": "'ai safety' OR deepfake",
+                "cases": "'ai fraud' OR 'crypto scam'",
+                "social": "'social media' AND fake"
+            }
+            
+            query = short_queries.get(category, "artificial intelligence")
+            
+            # NewsData.io API allows 'q' parameter for boolean search
+            api_url = "https://newsdata.io/api/1/news"
+            params = {
+                "apikey": newsdata_key,
+                "language": "en",
+                "q": query,
+                "country": "in,us,gb", 
+                "category": "technology,science,crime,politics" 
+            }
+            
+            response = requests.get(api_url, params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "results" in data:
+                    live_news = []
+                    for item in data["results"]:
+                        # 1. Basic Content Check
+                        title = item.get("title", "").lower()
+                        desc = (item.get("description") or "").lower()
+                        content = title + " " + desc
+                        
+                        # 2. Strict Filter: Must contain a risk keyword
+                        # Exception: If category is 'government', we allow regulation news without explicit 'crime' words
+                        if category != 'government' and not any(k in content for k in risk_keywords):
+                            continue
+                            
+                        # Map API fields to our NewsItem schema
+                        try:
+                            live_news.append({
+                                "id": item.get("article_id", str(hash(item.get("link", "")))),
+                                "title": item.get("title", "No Title"),
+                                "summary": item.get("description") or item.get("content", "No description available")[:200] + "...",
+                                "source": item.get("source_id", "NewsData.io"),
+                                "publishedAt": item.get("pubDate", "2024-02-10T12:00:00Z"),
+                                "imageUrl": item.get("image_url") or item.get("source_icon") or "",
+                                "url": item.get("link", "#"),
+                                "category": category if category != 'all' else 'technology', 
+                                "isLive": True
+                            })
+                        except Exception as e:
+                            print(f"Skipping invalid news item: {e}")
+                            continue
+                            
+                    print(f"✅ Fetched {len(live_news)} live articles (after strict filtering)")
+                    if live_news:
+                        return {"success": True, "news": live_news[:limit]}
+            else:
+                print(f"❌ NewsData.io API Error: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            print(f"❌ Failed to fetch live news: {str(e)}")
+            
+    # 2. Fallback to Mock Data
+    print("⚠️  Using mock news data (API key missing or fetch failed)")
     if category == "all":
         return {"success": True, "news": MOCK_NEWS[:limit]}
     
@@ -849,10 +1019,15 @@ async def chat_handler(request: ChatRequest):
         You are Authenex AI, a hyper-intelligent, multilingual assistant embedded within the Authenex Digital Forensics Platform.
         
         CRITICAL RULES:
-        1. LANGUAGE: FLUENTLY speak the user's language. If the user speaks Hindi, reply in Hindi. If mixed (Hinglish), reply in mixed. Default to English only if unsure.
-        2. KNOWLEDGE: You are an expert in EVERYTHING. Answer ALL questions (general knowledge, coding, history, science, etc.) accurately. Do NOT restrict yourself to forensics.
-        3. PERSONA: You are helpful, smart, professional, and friendly.
-        4. NAVIGATION: You have control over the app. If the user asks to go somewhere, you MUST include a navigation command in your response.
+        1. OUTPUT FORMAT: You must return ONLY valid JSON (no markdown fencing) with the following structure:
+           {{
+             "response": "Your actual helpful response here (markdown supported)",
+             "language": "ISO 639-1 code of your response (e.g., 'en', 'hi', 'fr', 'es', 'te')"
+           }}
+        2. LANGUAGE: FLUENTLY speak the user's language. If the user speaks Hindi, reply in Hindi. If mixed (Hinglish), reply in mixed. Default to English only if unsure.
+        3. KNOWLEDGE: You are an expert in EVERYTHING. Answer ALL questions (general knowledge, coding, history, science, etc.) accurately. Do NOT restrict yourself to forensics.
+        4. PERSONA: You are helpful, smart, professional, and friendly.
+        5. NAVIGATION: You have control over the app. If the user asks to go somewhere, you MUST include a navigation command in your 'response' text.
            - Format: `[[NAVIGATE:/exact/path]]`
            - Example: "Sure, let me take you to the settings. [[NAVIGATE:/dashboard/settings]]"
            - Use the Site Map to find the right path.
@@ -866,10 +1041,18 @@ async def chat_handler(request: ChatRequest):
         
         # Add context to instruction if available
         if request.analysis_context:
-            context_str = f"\n[ANALYSIS CONTEXT]: User is viewing a {request.analysis_context.get('modality')} analysis. Verdict: {request.analysis_context.get('verdict')}. AI Probability: {request.analysis_context.get('aiPercentage', 0)}%."
+            context_str = f"\\n[ANALYSIS CONTEXT]: User is viewing a {request.analysis_context.get('modality')} analysis. Verdict: {request.analysis_context.get('verdict')}. AI Probability: {request.analysis_context.get('aiPercentage', 0)}%."
             system_instruction += context_str
 
         # Add current user message to contents
+        contents = [] # Reset contents to avoid duplication if loop above was used incorrectly, but actually we need history
+        for msg in request.history:
+             role = "user" if msg.role == "user" else "model"
+             contents.append({
+                 "role": role,
+                 "parts": [{"text": msg.text}]
+             })
+
         contents.append({
             "role": "user",
             "parts": [{"text": request.message}]
@@ -881,16 +1064,35 @@ async def chat_handler(request: ChatRequest):
             config={
                 "system_instruction": system_instruction,
                 "temperature": 0.7,
+                # "response_mime_type": "application/json" # Optional: Enforce JSON mode if supported by SDK version
             },
             contents=contents
         )
         
-        return {"response": response.text}
+        raw_text = response.text
+        
+        # Parse JSON response
+        try:
+            clean_text = raw_text.strip()
+            clean_text = re.sub(r'```json\s*', '', clean_text)
+            clean_text = re.sub(r'```\s*', '', clean_text)
+            data = json.loads(clean_text)
+            return data
+        except json.JSONDecodeError:
+            print(f"Chat JSON Decode Error. Raw: {raw_text}")
+            # Fallback for plain text responses
+            return {
+                "response": raw_text,
+                "language": "en" # Default to English on error
+            }
 
     except Exception as e:
         print(f"Chat Error: {str(e)}")
         # Return a friendly fallback instead of 500
-        return {"response": "I'm having trouble connecting to my forensic core. Please try again in a moment."}
+        return {
+            "response": "I'm having trouble connecting to my forensic core. Please try again in a moment.",
+            "language": "en"
+        }
 
 if __name__ == "__main__":
     import uvicorn

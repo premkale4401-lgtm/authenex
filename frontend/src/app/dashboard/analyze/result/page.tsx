@@ -396,14 +396,7 @@ export default function AnalysisResultPage() {
                 {t("dashboard.recentAnalysis.actions.download")}
               </motion.button>
               
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-300 text-sm font-medium flex items-center gap-2 transition-all"
-              >
-                <Share2 className="w-4 h-4" />
-                {t("dashboard.recentAnalysis.actions.share")}
-              </motion.button>
+
               
               <Link
                 href="/dashboard/analyze"

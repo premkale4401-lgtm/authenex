@@ -7,29 +7,39 @@ import { AnalysisProvider } from "@/context/AnalysisContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 // import { Toaster } from "react-hot-toast";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Authenex | AI-Powered Digital Forensics",
   description: "Government-grade digital content verification platform",
 };
 
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+
+
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className="dark">
-      <body className={inter.className}>
-        <Providers>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} antialiased`}>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
           <LanguageProvider>
-            <AnalysisProvider>
-              {children}
-              <AuthenexChatWidget />
-            </AnalysisProvider>
+            <Providers>
+              <AnalysisProvider>
+                {children}
+                <AuthenexChatWidget />
+              </AnalysisProvider>
+            </Providers>
           </LanguageProvider>
-        </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );
