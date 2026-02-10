@@ -815,21 +815,20 @@ export default function TrustCenterPage() {
         {/* 4. Misuse Scenarios */}
         <section>
           <SectionHeader 
-            title="Recognizing AI Misuse"
-            subtitle="Common scenarios and how they manifest"
+            title={t('legal.misuse.title')}
+            subtitle={t('legal.misuse.subtitle')}
             icon={AlertTriangle}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {misuseScenarios.map((scenario) => (
-               <div key={scenario.id} className="p-6 bg-slate-900/40 border border-slate-800/50 rounded-xl hover:border-slate-700 transition-colors">
+            {aiMisuseScenarios.map((scenario, idx) => (
+               <div key={idx} className="p-6 bg-slate-900/40 border border-slate-800/50 rounded-xl hover:border-slate-700 transition-colors">
                   <div className="flex items-start justify-between mb-4">
                      <div className="p-3 bg-slate-800 rounded-lg">
-                        <scenario.icon className="w-6 h-6 text-sky-400" />
+                        <AlertTriangle className="w-6 h-6 text-sky-400" />
                      </div>
-                     <Badge variant={scenario.severity === 'critical' ? 'error' : 'warning'}>{scenario.severity}</Badge>
                   </div>
                   <h3 className="text-lg font-bold text-white mb-2">{scenario.title}</h3>
-                  <p className="text-slate-400 text-sm mb-4">{scenario.description}</p>
+                  <p className="text-slate-400 text-sm mb-4">{scenario.desc}</p>
                   <div className="pt-4 border-t border-slate-800/50">
                      <p className="text-emerald-400 text-sm font-medium flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4" />
@@ -845,12 +844,12 @@ export default function TrustCenterPage() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-12">
            <div className="lg:col-span-2">
               <SectionHeader 
-                title="Legal Framework"
-                subtitle="Indian laws governing digital crimes"
+                title={t('legal.legalFramework.title')}
+                subtitle={t('legal.legalFramework.subtitle')}
                 icon={Scale}
               />
               <div className="space-y-4">
-                 {legalFramework.map((law, i) => (
+                 {legalFrameworkLaws.map((law, i) => (
                     <div key={i} className="flex gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-800/50">
                        <div className="mt-1">
                           <BookOpen className="w-5 h-5 text-sky-500" />
@@ -858,7 +857,7 @@ export default function TrustCenterPage() {
                        <div>
                           <h4 className="text-white font-semibold">{law.act}</h4>
                           <p className="text-sky-400 text-sm mb-1">{law.section}</p>
-                          <p className="text-slate-400 text-sm">{law.description}</p>
+                          <p className="text-slate-400 text-sm">{law.desc}</p>
                        </div>
                     </div>
                  ))}
@@ -867,8 +866,8 @@ export default function TrustCenterPage() {
            
            <div>
               <SectionHeader 
-                title="Remedies"
-                subtitle="Steps to justice"
+                title={t('legal.remedies.title')}
+                subtitle={t('legal.remedies.subtitle')}
                 icon={Gavel}
               />
               <div className="relative border-l border-slate-800 ml-3 space-y-8 pl-8 py-2">
@@ -890,7 +889,7 @@ export default function TrustCenterPage() {
           <div className="p-6 bg-slate-900/30 border border-slate-800/50 rounded-2xl">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <Info className="w-5 h-5 text-sky-400" />
-              Legal Disclaimer & Ethical Position
+              {t('legal.disclaimer.title')}
             </h3>
             <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
               <p>
