@@ -93,99 +93,10 @@ interface StepByStep {
 }
 
 // --- Data: Privacy & Data Protection ---
-
-const privacyData = {
-  processedData: [
-    "Content submitted for forensic analysis (images, audio, documents, text)",
-    "Technical metadata required for detection algorithms",
-    "Account authentication and authorization credentials",
-    "Analysis timestamps and processing duration logs",
-    "Anonymized usage patterns for platform improvement"
-  ],
-  neverStored: [
-    "Raw content after analysis completion (24-hour auto-deletion)",
-    "Personal identification beyond account requirements",
-    "Third-party data or unrelated user information",
-    "Analysis results without explicit user access permissions",
-    "Cross-referenced external database information"
-  ],
-  encryption: [
-    "AES-256 encryption for data at rest",
-    "TLS 1.3 for all data in transit",
-    "End-to-end encryption for sensitive forensic transfers",
-    "Hardware Security Module (HSM) protected key management",
-    "Zero-knowledge architecture for content processing"
-  ],
-  userRights: [
-    {
-      right: "Right to Privacy",
-      description: "Your content is processed in isolated environments with no external access"
-    },
-    {
-      right: "Right to Data Deletion",
-      description: "Request immediate deletion of all associated data and analysis history"
-    },
-    {
-      right: "Right to Transparency",
-      description: "Access complete logs of how your data was processed and handled"
-    },
-    {
-      right: "Right to Portability",
-      description: "Export all your data and analysis reports in standard formats"
-    }
-  ],
-  compliance: [
-    {
-      framework: "Information Technology Act, 2000",
-      alignment: "Section 43A and SPDI Rules compliance for sensitive data protection"
-    },
-    {
-      framework: "Digital Personal Data Protection Act",
-      alignment: "Principles of purpose limitation, data minimization, and storage limitation"
-    },
-    {
-      framework: "Global Privacy Standards",
-      alignment: "GDPR-aligned privacy-by-design principles without jurisdictional claims"
-    }
-  ]
-};
+// Moved to component to use translations dynamically
 
 // --- Data: Security & Abuse Prevention ---
-
-const securityData = {
-  preventionMeasures: [
-    {
-      title: "Result Integrity Protection",
-      description: "Cryptographic signing of all forensic reports prevents tampering or falsification"
-    },
-    {
-      title: "False Accusation Safeguards",
-      description: "Confidence scoring and uncertainty quantification prevent definitive false claims"
-    },
-    {
-      title: "Anti-Harassment Protocols",
-      description: "Rate limiting and pattern detection prevent systematic targeting of individuals"
-    }
-  ],
-  antiAbuse: [
-    {
-      mechanism: "Rate Limiting",
-      description: "Intelligent throttling prevents bulk analysis abuse and API exploitation"
-    },
-    {
-      mechanism: "Human Review Escalation",
-      description: "High-stakes analyses flagged for expert forensic reviewer validation"
-    },
-    {
-      mechanism: "Suspicious Usage Monitoring",
-      description: "AI-powered detection of anomalous platform usage patterns"
-    },
-    {
-      mechanism: "Account Verification Tiers",
-      description: "Progressive trust levels based on identity verification and usage history"
-    }
-  ]
-};
+// Moved to component to use translations dynamically
 
 // --- Data: AI Misuse Scenarios ---
 
@@ -585,6 +496,48 @@ export default function TrustCenterPage() {
     }
   ];
   
+  // Generate privacy data from translations
+  const privacyData = {
+    processedData: t('legal.privacy.processedData.items') as unknown as string[],
+    neverStored: t('legal.privacy.neverStored.items') as unknown as string[],
+    encryption: t('legal.privacy.encryption.items') as unknown as string[],
+  };
+  
+  // Generate security data from translations  
+  const securityData = {
+    preventionMeasures: [
+      {
+        title: t('legal.security.prevention.items.integrity.title'),
+        description: t('legal.security.prevention.items.integrity.desc')
+      },
+      {
+        title: t('legal.security.prevention.items.falseAccusation.title'),
+        description: t('legal.security.prevention.items.falseAccusation.desc')
+      },
+      {
+        title: t('legal.security.prevention.items.harassment.title'),
+        description: t('legal.security.prevention.items.harassment.desc')
+      }
+    ],
+    antiAbuse: [
+      {
+        mechanism: t('legal.security.antiAbuse.items.rateLimit.title'),
+        description: t('legal.security.antiAbuse.items.rateLimit.desc')
+      },
+      {
+        mechanism: t('legal.security.antiAbuse.items.humanReview.title'),
+        description: t('legal.security.antiAbuse.items.humanReview.desc')
+      },
+      {
+        mechanism: t('legal.security.antiAbuse.items.monitoring.title'),
+        description: t('legal.security.antiAbuse.items.monitoring.desc')
+      },
+      {
+        mechanism: t('legal.security.antiAbuse.items.verification.title'),
+        description: t('legal.security.antiAbuse.items.verification.desc')
+      }
+    ]
+  };
   return (
     <div className="text-slate-300 relative min-h-screen bg-slate-950">
       {/* Background Effects */}
@@ -673,15 +626,15 @@ export default function TrustCenterPage() {
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div>
                  <SectionHeader 
-                   title="Privacy & Data Protection"
-                   subtitle="How we handle your sensitive forensic data"
+                   title={t('legal.privacy.title')}
+                   subtitle={t('legal.privacy.subtitle')}
                    icon={Lock}
                  />
                  <div className="space-y-6">
                     <Card>
                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                          <Database className="w-5 h-5 text-sky-400" />
-                         Data Minimization
+                         {t('legal.privacy.processedData.title')}
                        </h3>
                        <p className="text-slate-400 text-sm mb-4">
                          We only process what is strictly necessary for forensic analysis, authenticating calls, and detecting manipulation.
@@ -699,7 +652,7 @@ export default function TrustCenterPage() {
                     <Card>
                       <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <LockKeyhole className="w-5 h-5 text-sky-400" />
-                        Encryption Standards
+                        {t('legal.privacy.encryption.title')}
                       </h3>
                       <div className="space-y-3">
                         {privacyData.encryption.slice(0, 3).map((item, idx) => (
@@ -715,7 +668,7 @@ export default function TrustCenterPage() {
 
               <div>
                  <SectionHeader 
-                   title="Security & Abuse Prevention"
+                   title={t('legal.security.title')}
                    subtitle="Platform safeguards and integrity measures"
                    icon={ShieldCheck}
                  />
