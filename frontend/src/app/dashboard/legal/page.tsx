@@ -918,8 +918,8 @@ export default function TrustCenterPage() {
 
         {/* Footer */}
         <footer className="text-center text-slate-500 text-sm pb-8">
-          <p>© 2026 Authenex. National Digital Trust Platform.</p>
-          <p className="mt-2">Committed to ethical AI, privacy by design, and digital safety for all.</p>
+          <p>{t('legal.footer.copyright')}</p>
+          <p className="mt-2">{t('legal.footer.tagline')}</p>
         </footer>
 
       </div>
