@@ -628,11 +628,11 @@ async def analyze_asset(
             gemini_content.append(prompt)
 
         # Call Gemini API
-        print(f"Calling Gemini API (gemini-2.0-flash)...")
+        print(f"Calling Gemini API (gemini-2.5-pro)...")
         
         # Use the new google-genai SDK
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-pro",
             contents=gemini_content
         )
         raw_text = response.text
@@ -716,7 +716,7 @@ async def analyze_asset(
             confidence=result["confidence"],
             ai_percentage=result["aiPercentage"],
             human_percentage=result["humanPercentage"],
-            model="gemini-2.0-flash",
+            model="gemini-2.5-pro",
             reasoning=result["explanation"],
             details=result["details"]
         )
@@ -833,19 +833,40 @@ async def chat_handler(request: ChatRequest):
                 "parts": [{"text": msg.text}]
             })
         
+        # Site Map for Navigation
+        site_map = {
+            "/dashboard": "Main Dashboard - Overview",
+            "/dashboard/analyze": "Deepfake Analysis - Upload & Scan",
+            "/dashboard/cases": "Case History",
+            "/dashboard/settings": "User Settings & Preferences",
+            "/help": "Help Center",
+            "/auth/login": "Login Page",
+            "/auth/signup": "Sign Up Page"
+        }
+
         # System Instruction
         system_instruction = f"""
-        You are Authenex AI, an advanced AI consultant and guide embedded within the Authenex platform.
-        {f"IMPORTANT: The user's preferred language is '{request.language}'. YOU MUST REPLY IN THIS LANGUAGE." if request.language and request.language != 'en' else "Reply in the language the user is speaking, defaulting to English."}
+        You are Authenex AI, a hyper-intelligent, multilingual assistant embedded within the Authenex Digital Forensics Platform.
+        
+        CRITICAL RULES:
+        1. LANGUAGE: FLUENTLY speak the user's language. If the user speaks Hindi, reply in Hindi. If mixed (Hinglish), reply in mixed. Default to English only if unsure.
+        2. KNOWLEDGE: You are an expert in EVERYTHING. Answer ALL questions (general knowledge, coding, history, science, etc.) accurately. Do NOT restrict yourself to forensics.
+        3. PERSONA: You are helpful, smart, professional, and friendly.
+        4. NAVIGATION: You have control over the app. If the user asks to go somewhere, you MUST include a navigation command in your response.
+           - Format: `[[NAVIGATE:/exact/path]]`
+           - Example: "Sure, let me take you to the settings. [[NAVIGATE:/dashboard/settings]]"
+           - Use the Site Map to find the right path.
+        
+        SITE MAP:
+        {json.dumps(site_map, indent=2)}
 
-        YOUR CORE IDENTITY:
-        - Role: Indian Male Expert (Polite, Professional, Helpful, Knowledgeable).
-        - Specialization: You are an expert on the Authenex Platform and Digital Forensics.
+        CONTEXT:
+        User Language Preference: '{request.language}'
         """
         
         # Add context to instruction if available
         if request.analysis_context:
-            context_str = f"\n[CONTEXT]: User is viewing a {request.analysis_context.get('modality')} analysis. Verdict: {request.analysis_context.get('verdict')}. AI Probability: {request.analysis_context.get('aiPercentage', 0)}%."
+            context_str = f"\n[ANALYSIS CONTEXT]: User is viewing a {request.analysis_context.get('modality')} analysis. Verdict: {request.analysis_context.get('verdict')}. AI Probability: {request.analysis_context.get('aiPercentage', 0)}%."
             system_instruction += context_str
 
         # Add current user message to contents
@@ -856,7 +877,7 @@ async def chat_handler(request: ChatRequest):
 
         # use the client for generation
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-pro",
             config={
                 "system_instruction": system_instruction,
                 "temperature": 0.7,

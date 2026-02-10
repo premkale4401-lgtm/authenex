@@ -20,10 +20,35 @@ export async function generatePDFBuffer(
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-  doc.setTextColor(6, 182, 212);
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('AUTHENEX', margin, 20);
+  // Add Brand Logo if possible
+  const brandLogoUrl = "https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg";
+  
+  try {
+      const response = await fetch(brandLogoUrl);
+      if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const base64 = buffer.toString('base64');
+          const dataUrl = `data:image/png;base64,${base64}`;
+          
+          // Add logo at top left
+          // Adjust dimensions as needed. Assuming landscape-ish logo.
+          doc.addImage(dataUrl, 'PNG', margin, 15, 40, 15); 
+      } else {
+          // Fallback to text if fetch fails
+          doc.setTextColor(6, 182, 212);
+          doc.setFontSize(24);
+          doc.setFont('helvetica', 'bold');
+          doc.text('AUTHENEX', margin, 25);
+      }
+  } catch (error) {
+      console.error("Failed to load brand logo:", error);
+      // Fallback text
+      doc.setTextColor(6, 182, 212);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('AUTHENEX', margin, 25);
+  }
 
   doc.setDrawColor(16, 185, 129);
   doc.setLineWidth(0.5);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { 
   MessageSquare, X, Mic, Send, Minimize2, 
   Maximize2, Volume2, VolumeX, ShieldCheck, 
@@ -108,30 +109,47 @@ export default function AuthenexChatWidget() {
     }
   };
 
+  // Voice & Navigation
+  const router = useRouter();
+
   const speakResponse = (text: string) => {
     if (!synthRef.current) return;
     
     // Stop any current speech
     synthRef.current.cancel();
 
-    // Clean text for speech (remove markdown asterisks like *text* or **text**)
-    const cleanText = text.replace(/[*#]/g, "");
+    // Clean text for speech (remove markdown and navigation tags)
+    let cleanText = text.replace(/\[\[NAVIGATE:.*?\]\]/g, ""); // Remove nav tags
+    cleanText = cleanText.replace(/[*#]/g, ""); // Remove markdown
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
 
-    // Select Indian Voice (Prefer Male/Clear)
-    // Priority: Microsoft Mark (Indian English) > Google English (India) > Any en-IN > Any Male English
+    // SMARTER VOICE SELECTION
+    // 1. Detect language of response (simple heuristic or passed from backend - for now assume shared lang context)
+    // 2. Try to match voice to that language
     const voices = window.speechSynthesis.getVoices();
-    const indianVoice = voices.find(v => v.name.includes("Microsoft Mark")) 
-                     || voices.find(v => v.lang === 'en-IN' || v.lang.includes('en-IN'))
-                     || voices.find(v => v.name.includes('India') || v.name.includes('Hindi'));
+    let selectedVoice = null;
 
-    if (indianVoice) {
-        utterance.voice = indianVoice;
+    // Heuristic: If text contains Devanagari, prefer Hindi voice
+    const hasHindiChars = /[\u0900-\u097F]/.test(cleanText);
+    
+    if (hasHindiChars) {
+       selectedVoice = voices.find(v => v.lang.includes('hi') || v.name.includes('Hindi'));
+    }
+    
+    // Fallback to Indian English or clear English
+    if (!selectedVoice) {
+       selectedVoice = voices.find(v => v.name.includes("Microsoft Mark")) 
+                     || voices.find(v => v.lang === 'en-IN' || v.lang.includes('en-IN'))
+                     || voices.find(v => v.name.includes('India'));
     }
 
-    utterance.pitch = 1.0; // Normal pitch for male voice
-    utterance.rate = 1.1; // Slightly faster, natural pace
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+
+    utterance.pitch = 1.0; 
+    utterance.rate = 1.1; 
     utterance.volume = 1;
     
     utterance.onstart = () => setIsSpeaking(true);
@@ -151,7 +169,6 @@ export default function AuthenexChatWidget() {
          if (stored) {
              try {
                  contextToSend = JSON.parse(stored);
-                 console.log("Using localStorage fallback for context");
              } catch (e) {
                  console.error("Fallback parse failed", e);
              }
@@ -165,14 +182,12 @@ export default function AuthenexChatWidget() {
 
     try {
       // Backend expects: message, history, mode
-      // Convert current messages to history format for Gemini API if needed
-      // Map 'model' -> 'model' and 'user' -> 'user' for history
       const history = messages.map(m => ({
-        role: m.role === "model" ? "model" : "user", // Ensure strict role mapping
+        role: m.role === "model" ? "model" : "user", 
         text: m.text 
       }));
 
-      // Get current language code from localStorage or context (assuming t is context-aware but we need code)
+      // Get current language code
       const currentLang = typeof window !== 'undefined' ? localStorage.getItem('authenex-lang') || 'en' : 'en';
 
       const res = await fetch("http://localhost:8000/api/chat", {
@@ -180,37 +195,43 @@ export default function AuthenexChatWidget() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: messageText,
-          history: history, // Send simplified history
+          history: history, 
           mode: mode,
-          analysis_context: contextToSend, // Send context (from state or fallback)
-          language: currentLang // Send language preference
+          analysis_context: contextToSend,
+          language: currentLang 
         }),
       });
 
       const data = await res.json();
       
       if (!res.ok) {
-        let errorMessage = "Something went wrong";
-        if (data && data.detail) {
-          if (typeof data.detail === "string") {
-            errorMessage = data.detail;
-          } else if (Array.isArray(data.detail)) {
-            errorMessage = data.detail[0]?.msg || JSON.stringify(data.detail);
-          } else {
-            errorMessage = JSON.stringify(data.detail);
-          }
-        } else if (data && data.message) {
-          errorMessage = data.message;
-        }
-        throw new Error(errorMessage);
+        throw new Error(data.detail || "Something went wrong");
       }
 
-      const botMsg: Message = { role: "model", text: data.response };
+      // PROCESS RESPONSE FOR COMMANDS
+      let botResponseText = data.response;
+      
+      // Check for Navigation Command
+      const navMatch = botResponseText.match(/\[\[NAVIGATE:(.*?)\]\]/);
+      if (navMatch) {
+          const targetPath = navMatch[1];
+          console.log("🤖 Navigating to:", targetPath);
+          
+          // Remove tag from display text
+          botResponseText = botResponseText.replace(/\[\[NAVIGATE:.*?\]\]/g, "");
+          
+          // Execute Navigation
+          router.push(targetPath);
+          
+          // If we navigated, maybe close chat on mobile? or keep open. Keeping open is better for guidance.
+      }
+
+      const botMsg: Message = { role: "model", text: botResponseText };
       setMessages((prev) => [...prev, botMsg]);
 
       // If voice mode or voice input was used, speak the response
       if (mode === "voice") {
-        speakResponse(data.response);
+        speakResponse(botResponseText); // pass cleaned text logic inside speakResponse
       }
 
     } catch (error: any) {
