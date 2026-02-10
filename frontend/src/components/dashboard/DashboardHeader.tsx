@@ -57,6 +57,7 @@ export default function DashboardHeader({
       {/* Mobile Menu Button */}
       <button 
         onClick={() => setMobileMenuOpen(true)}
+        suppressHydrationWarning
         className="lg:hidden mr-4 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
       >
         <Menu className="w-6 h-6" />
@@ -73,6 +74,7 @@ export default function DashboardHeader({
             className="block w-full pl-10 pr-20 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl leading-5 bg-slate-100 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 transition-all sm:text-sm"
             placeholder={t('header.searchPlaceholder')}
             onClick={() => setSearchOpen(true)}
+            suppressHydrationWarning
           />
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
             <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
@@ -94,6 +96,7 @@ export default function DashboardHeader({
         <div className="relative">
           <button
             onClick={() => setNotifOpen(!notifOpen)}
+            suppressHydrationWarning
             className="relative p-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all"
           >
             <Bell className="w-5 h-5" />
@@ -181,6 +184,7 @@ export default function DashboardHeader({
         <div className="relative ml-2">
           <button 
             onClick={() => setUserMenuOpen(!userMenuOpen)}
+            suppressHydrationWarning
             className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800 outline-none"
           >
             <div className="text-right hidden sm:block">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,6 +50,14 @@ export default function DashboardSidebar({
 }) {
   const { t } = useLanguage();
   const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile(); // Check on mount
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   return (
     <>
@@ -70,7 +78,7 @@ export default function DashboardSidebar({
         initial={false}
         animate={{ 
           width: collapsed ? 80 : 288,
-          x: typeof window !== 'undefined' && window.innerWidth < 1024 ? (mobileMenuOpen ? 0 : -288) : 0
+          x: isMobile ? (mobileMenuOpen ? 0 : -288) : 0
         }}
         transition={{ type: "spring", bounce: 0, duration: 0.3 }}
         className="fixed left-0 top-0 h-screen bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:via-[#0B1120] dark:to-slate-950 border-r border-slate-200 dark:border-slate-800/50 z-50 flex flex-col lg:translate-x-0 shadow-xl dark:shadow-2xl dark:shadow-black/50 transition-colors"
@@ -170,6 +178,7 @@ export default function DashboardSidebar({
         {/* Collapse button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
+          suppressHydrationWarning
           className="absolute -right-3 top-24 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-white hover:bg-sky-500 hover:border-sky-500 transition-all z-50 shadow-sm"
         >
           {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}

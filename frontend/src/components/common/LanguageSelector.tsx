@@ -15,6 +15,7 @@ export default function LanguageSelector() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        suppressHydrationWarning
         className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-xl text-slate-300 hover:text-white transition-all group"
       >
         <Languages className="w-4 h-4 text-sky-400" />

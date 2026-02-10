@@ -66,24 +66,33 @@ class GeminiAuthService:
             model_name = 'gemini-3-flash-preview'  # EXACT from source
             
             # Set system prompt based on modality (EXACT from source)
-            system_prompt = "Act as a specialized forensic analyst."
+                
+            # Set system prompt based on modality (EXACT from source with detailed instructions)
+            base_prompt = "Act as a specialized forensic analyst."
+            specific_instructions = ""
             
             if modality.upper() == 'AUDIO':
-                system_prompt += " Analyze the audio for AI voice synthesis, cloning artifacts, robotic prosody, and phase inconsistencies."
+                specific_instructions = "Analyze the audio for AI voice synthesis, cloning artifacts, robotic prosody, phase inconsistencies, and background noise anomalies. Check for spectral irregularities typical of TTS models."
             elif modality.upper() == 'VIDEO':
-                system_prompt += " Analyze the video for deepfake signatures, temporal flickering, lip-sync errors, and unnatural head-body alignment."
-            elif modality.upper() == 'DOCUMENT':
-                system_prompt += " Analyze text for LLM generation patterns, repetitive syntax, and AI-typical lexical choices."
+                specific_instructions = "Analyze the video for deepfake signatures, temporal flickering, lip-sync errors, unnatural head-body alignment, and lighting inconsistencies between subject and background."
+            elif modality.upper() == 'DOCUMENT' or modality.upper() == 'TEXT':
+                specific_instructions = "Analyze text for LLM generation patterns, repetitive syntax, lack of perplexity, and AI-typical lexical choices. Check for hallucinations or factual inconsistencies."
             else:  # IMAGE
-                system_prompt += " Analyze the image for biometric inconsistencies, GAN noise, and lighting coherence errors."
+                specific_instructions = "Analyze the image for biometric inconsistencies, GAN noise, lighting coherence errors, physical anomalies in hands/eyes, and pixel-level manipulation artifacts."
+            
+            system_prompt = f"{base_prompt} {specific_instructions}"
             
             # Decode base64 data
             clean_base64 = base64_data.split(',')[1] if ',' in base64_data else base64_data
             decoded_bytes = base64.b64decode(clean_base64)
             
             # Create temp file and upload (Python SDK requirement)
-            ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg", 
-                       "video/mp4": ".mp4", "audio/mp3": ".mp3", "application/pdf": ".pdf"}
+            ext_map = {
+                "image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/webp": ".webp", "image/heic": ".heic", "image/heif": ".heif",
+                "video/mp4": ".mp4", "video/mpeg": ".mpeg", "video/mov": ".mov", "video/avi": ".avi", "video/x-flv": ".flv", "video/mpg": ".mpg", "video/webm": ".webm", "video/wmv": ".wmv", "video/3gpp": ".3gp",
+                "audio/mpeg": ".mp3", "audio/mp3": ".mp3", "audio/wav": ".wav", "audio/aac": ".aac", "audio/x-m4a": ".m4a", "audio/ogg": ".ogg", "audio/flac": ".flac",
+                "application/pdf": ".pdf", "text/plain": ".txt", "text/csv": ".csv", "text/html": ".html"
+            }
             ext = ext_map.get(mime_type, ".tmp")
             
             fd, tmp_path = tempfile.mkstemp(suffix=ext)

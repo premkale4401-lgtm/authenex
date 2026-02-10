@@ -1,7 +1,7 @@
 // frontend/src/app/dashboard/analyze/page.tsx (Analysis Interface)
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -53,6 +53,12 @@ export default function AnalyzePage() {
   const [results, setResults] = useState<any>(null);
   const [textContent, setTextContent] = useState("");
   const { setAnalysis } = useAnalysis();
+  const [mounted, setMounted] = useState(false);
+  const [scanId] = useState(() => Math.random().toString(36).substr(2, 9).toUpperCase());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -301,6 +307,7 @@ export default function AnalyzePage() {
           <button
             key={type.id}
             onClick={() => setSelectedType(type.id)}
+            suppressHydrationWarning
             className={`relative p-6 rounded-2xl border-2 transition-all text-left group ${
               selectedType === type.id
                 ? "border-sky-500 bg-sky-500/10"
@@ -359,6 +366,7 @@ export default function AnalyzePage() {
               </div>
               <button 
                 onClick={() => setTextContent("")}
+                suppressHydrationWarning
                 className="text-xs text-slate-400 hover:text-white transition-colors underline underline-offset-4"
               >
                 Clear Input
@@ -367,6 +375,7 @@ export default function AnalyzePage() {
 
             <button
               onClick={startAnalysis}
+              suppressHydrationWarning
               disabled={isAnalyzing || (!textContent && files.length === 0)}
               className="w-full py-4 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-sky-400 hover:to-indigo-500 transition-all shadow-lg shadow-sky-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -407,7 +416,7 @@ export default function AnalyzePage() {
                 {isDragActive ? t('analyze.dropzone.dragActive') : t('analyze.dropzone.dragDrop')}
               </p>
               <p className="text-sm text-slate-400 mb-4">{t('analyze.dropzone.browse')}</p>
-              <button className="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors">
+              <button suppressHydrationWarning className="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors">
                 {t('analyze.dropzone.selectFiles')}
               </button>
             </div>
@@ -523,7 +532,7 @@ export default function AnalyzePage() {
              </div>
              <div className="px-4 py-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg">
                <span className="text-slate-400 font-mono text-sm">
-                 ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
+                  ID: {mounted ? scanId : "LOADING..."}
                </span>
              </div>
            </div>
