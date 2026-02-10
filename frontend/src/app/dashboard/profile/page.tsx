@@ -22,7 +22,8 @@ import {
   Lock,
   Smartphone,
   Bell,
-  Trash2
+  Trash2,
+  CreditCard
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";

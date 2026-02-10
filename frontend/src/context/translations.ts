@@ -728,6 +728,92 @@ export const translations = {
       signInButton: "Sign In",
       secured: "Secured with 256-bit encryption",
       backHome: "Back to home"
+    },
+    profile: {
+      tabs: {
+        overview: "Overview",
+        activity: "Activity",
+        achievements: "Achievements"
+      },
+      edit: "Edit Profile",
+      save: "Save Changes",
+      cancel: "Cancel",
+      credits: {
+        available: "Available Credits",
+        refill: "Next Refill",
+        add: "Add Credits",
+        usage: "Credit Usage"
+      },
+      about: "About",
+      email: "Email",
+      website: "Website",
+      memberSince: "Member Since",
+      lastActive: "Last Active",
+      plan: {
+        current: "Current Plan",
+        renews: "Renews on",
+        upgrade: "Upgrade Plan"
+      },
+      delete: {
+        title: "Delete Account",
+        desc: "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.",
+        confirm: "Delete Account"
+      }
+    },
+    analytics: {
+      header: {
+        title: "Analytics Overview",
+        subtitle: "Welcome back, here's what's happening with your forensic analyses.",
+        filter: "Filter",
+        last7days: "Last 7 Days"
+      },
+      stats: {
+        total: "Total Analyses",
+        authentic: "Authentic Content",
+        manipulated: "Manipulated Detected",
+        pending: "Pending Review"
+      },
+      charts: {
+        activity: {
+          title: "Analysis Activity",
+          subtitle: "Weekly breakdown of forensic analyses",
+          total: "Total",
+          authentic: "Authentic",
+          manipulated: "Manipulated"
+        },
+        distribution: {
+          title: "Content Distribution",
+          subtitle: "Breakdown by media type",
+          images: "Images",
+          videos: "Videos",
+          documents: "Documents"
+        }
+      },
+      table: {
+        title: "Recent Cases",
+        subtitle: "Latest forensic analyses and their status",
+        viewAll: "View All",
+        headers: {
+          id: "Case ID",
+          type: "Type",
+          title: "Title",
+          status: "Status",
+          result: "Result",
+          time: "Time",
+          action: "Action"
+        },
+        status: {
+          completed: "Completed",
+          processing: "Processing",
+          pending: "Pending"
+        }
+      },
+      quickActions: {
+        image: { title: "Image Analysis", desc: "Verify image authenticity" },
+        video: { title: "Video Forensics", desc: "Detect deepfakes & edits" },
+        document: { title: "Document Check", desc: "Validate document integrity" },
+        batch: { title: "Batch Processing", desc: "Analyze multiple files" }
+      }
     }
   },
   hi: {
@@ -1458,6 +1544,92 @@ export const translations = {
       signInButton: "साइन इन करें",
       secured: "256-बिट एन्क्रिप्शन के साथ सुरक्षित",
       backHome: "वापस घर जाओ"
+    },
+    profile: {
+      tabs: {
+        overview: "अवलोकन",
+        activity: "गतिविधि",
+        achievements: "उपलब्धियां"
+      },
+      edit: "प्रोफ़ाइल संपादित करें",
+      save: "परिवर्तन सहेजें",
+      cancel: "रद्द करें",
+      credits: {
+        available: "उपलब्ध क्रेडिट",
+        refill: "अगला रीफिल",
+        add: "क्रेडिट जोड़ें",
+        usage: "क्रेडिट उपयोग"
+      },
+      about: "के बारे में",
+      email: "ईमेल",
+      website: "वेबसाइट",
+      memberSince: "सदस्यता की तारीख",
+      lastActive: "अंतिम सक्रिय",
+      plan: {
+        current: "वर्तमान योजना",
+        renews: "नवीनीकरण",
+        upgrade: "योजना अपग्रेड करें"
+      },
+      delete: {
+        title: "खाता हटाएं",
+        desc: "क्या आप वाकई अपना खाता हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती है और आपका सारा डेटा स्थायी रूप से हटा दिया जाएगा।",
+        confirm: "खाता हटाएं"
+      }
+    },
+    analytics: {
+      header: {
+        title: "एनालिटिक्स अवलोकन",
+        subtitle: "वापस स्वागत है, यहाँ आपके फोरेंसिक विश्लेषणों के साथ क्या हो रहा है।",
+        filter: "फ़िल्टर",
+        last7days: "पिछले 7 दिन"
+      },
+      stats: {
+        total: "कुल विश्लेषण",
+        authentic: "प्रामाणिक सामग्री",
+        manipulated: "हेरफेर का पता चला",
+        pending: "समीक्षा लंबित"
+      },
+      charts: {
+        activity: {
+          title: "विश्लेषण गतिविधि",
+          subtitle: "फोरेंसिक विश्लेषणों का साप्ताहिक विवरण",
+          total: "कुल",
+          authentic: "प्रामाणिक",
+          manipulated: "हेरफेर"
+        },
+        distribution: {
+          title: "सामग्री वितरण",
+          subtitle: "मीडिया प्रकार द्वारा विवरण",
+          images: "छवियाँ",
+          videos: "वीडियो",
+          documents: "दस्तावेज़"
+        }
+      },
+      table: {
+        title: "हाल के मामले",
+        subtitle: "नवीनतम फोरेंसिक विश्लेषण और उनकी स्थिति",
+        viewAll: "सभी देखें",
+        headers: {
+          id: "मामला आईडी",
+          type: "प्रकार",
+          title: "शीर्षक",
+          status: "स्थिति",
+          result: "परिणाम",
+          time: "समय",
+          action: "कार्रवाई"
+        },
+        status: {
+          completed: "पूर्ण",
+          processing: "प्रक्रियाधीन",
+          pending: "लंबित"
+        }
+      },
+      quickActions: {
+        image: { title: "छवि विश्लेषण", desc: "छवि प्रामाणिकता सत्यापित करें" },
+        video: { title: "वीडियो फोरेंसिक", desc: "डीपफेक और संपादन का पता लगाएं" },
+        document: { title: "दस्तावेज़ जाँच", desc: "दस्तावेज़ अखंडता मान्य करें" },
+        batch: { title: "बैच प्रोसेसिंग", desc: "कई फ़ाइलों का विश्लेषण करें" }
+      }
     },
 
   },

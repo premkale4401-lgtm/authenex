@@ -34,91 +34,101 @@ import {
   BarChart,
   Bar
 } from "recharts";
-
-const stats = [
-  {
-    title: "Total Analyses",
-    value: "1,284",
-    change: "+12.5%",
-    trend: "up",
-    icon: Activity,
-    color: "from-sky-500 to-blue-600",
-    bgColor: "bg-sky-500/10",
-    borderColor: "border-sky-500/20"
-  },
-  {
-    title: "Authentic Content",
-    value: "892",
-    change: "+8.2%",
-    trend: "up",
-    icon: CheckCircle2,
-    color: "from-emerald-500 to-green-600",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/20"
-  },
-  {
-    title: "Manipulated Detected",
-    value: "312",
-    change: "+24.1%",
-    trend: "up",
-    icon: AlertTriangle,
-    color: "from-rose-500 to-red-600",
-    bgColor: "bg-rose-500/10",
-    borderColor: "border-rose-500/20"
-  },
-  {
-    title: "Pending Review",
-    value: "80",
-    change: "-5.4%",
-    trend: "down",
-    icon: Clock,
-    color: "from-amber-500 to-orange-600",
-    bgColor: "bg-amber-500/10",
-    borderColor: "border-amber-500/20"
-  }
-];
-
-const activityData = [
-  { name: "Mon", analyses: 45, authentic: 32, manipulated: 13 },
-  { name: "Tue", analyses: 52, authentic: 38, manipulated: 14 },
-  { name: "Wed", analyses: 48, authentic: 35, manipulated: 13 },
-  { name: "Thu", analyses: 61, authentic: 42, manipulated: 19 },
-  { name: "Fri", analyses: 55, authentic: 40, manipulated: 15 },
-  { name: "Sat", analyses: 38, authentic: 28, manipulated: 10 },
-  { name: "Sun", analyses: 42, authentic: 31, manipulated: 11 },
-];
-
-const contentTypeData = [
-  { name: "Images", value: 65, color: "#0ea5e9" },
-  { name: "Videos", value: 25, color: "#6366f1" },
-  { name: "Documents", value: 10, color: "#8b5cf6" },
-];
-
-const recentCases = [
-  { id: "CASE-2045", type: "image", title: "Social Media Verification", status: "completed", result: "authentic", time: "2 min ago", confidence: 98 },
-  { id: "CASE-2044", type: "video", title: "News Footage Analysis", status: "processing", result: null, time: "15 min ago", confidence: null },
-  { id: "CASE-2043", type: "image", title: "Legal Evidence Review", status: "completed", result: "manipulated", time: "1 hour ago", confidence: 94 },
-  { id: "CASE-2042", type: "document", title: "Contract Authenticity", status: "completed", result: "authentic", time: "3 hours ago", confidence: 99 },
-  { id: "CASE-2041", type: "video", title: "Surveillance Footage", status: "pending", result: null, time: "5 hours ago", confidence: null },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
+
+  const stats = [
+    {
+      title: t('analytics.stats.total'),
+      value: "1,284",
+      change: "+12.5%",
+      trend: "up",
+      icon: Activity,
+      color: "from-sky-500 to-blue-600",
+      bgColor: "bg-sky-500/10",
+      borderColor: "border-sky-500/20"
+    },
+    {
+      title: t('analytics.stats.authentic'),
+      value: "892",
+      change: "+8.2%",
+      trend: "up",
+      icon: CheckCircle2,
+      color: "from-emerald-500 to-green-600",
+      bgColor: "bg-emerald-500/10",
+      borderColor: "border-emerald-500/20"
+    },
+    {
+      title: t('analytics.stats.manipulated'),
+      value: "312",
+      change: "+24.1%",
+      trend: "up",
+      icon: AlertTriangle,
+      color: "from-rose-500 to-red-600",
+      bgColor: "bg-rose-500/10",
+      borderColor: "border-rose-500/20"
+    },
+    {
+      title: t('analytics.stats.pending'),
+      value: "80",
+      change: "-5.4%",
+      trend: "down",
+      icon: Clock,
+      color: "from-amber-500 to-orange-600",
+      bgColor: "bg-amber-500/10",
+      borderColor: "border-amber-500/20"
+    }
+  ];
+
+  const activityData = [
+    { name: "Mon", analyses: 45, authentic: 32, manipulated: 13 },
+    { name: "Tue", analyses: 52, authentic: 38, manipulated: 14 },
+    { name: "Wed", analyses: 48, authentic: 35, manipulated: 13 },
+    { name: "Thu", analyses: 61, authentic: 42, manipulated: 19 },
+    { name: "Fri", analyses: 55, authentic: 40, manipulated: 15 },
+    { name: "Sat", analyses: 38, authentic: 28, manipulated: 10 },
+    { name: "Sun", analyses: 42, authentic: 31, manipulated: 11 },
+  ];
+
+  const contentTypeData = [
+    { name: t('analytics.charts.distribution.images'), value: 65, color: "#0ea5e9" },
+    { name: t('analytics.charts.distribution.videos'), value: 25, color: "#6366f1" },
+    { name: t('analytics.charts.distribution.documents'), value: 10, color: "#8b5cf6" },
+  ];
+
+  const recentCases = [
+    { id: "CASE-2045", type: "image", title: "Social Media Verification", status: "completed", result: "authentic", time: "2 min ago", confidence: 98 },
+    { id: "CASE-2044", type: "video", title: "News Footage Analysis", status: "processing", result: null, time: "15 min ago", confidence: null },
+    { id: "CASE-2043", type: "image", title: "Legal Evidence Review", status: "completed", result: "manipulated", time: "1 hour ago", confidence: 94 },
+    { id: "CASE-2042", type: "document", title: "Contract Authenticity", status: "completed", result: "authentic", time: "3 hours ago", confidence: 99 },
+    { id: "CASE-2041", type: "video", title: "Surveillance Footage", status: "pending", result: null, time: "5 hours ago", confidence: null },
+  ];
+
+  const quickActions = [
+    { title: t('analytics.quickActions.image.title'), desc: t('analytics.quickActions.image.desc'), icon: ImageIcon, color: "sky", href: "/dashboard/analyze?type=image" },
+    { title: t('analytics.quickActions.video.title'), desc: t('analytics.quickActions.video.desc'), icon: Video, color: "indigo", href: "/dashboard/analyze?type=video" },
+    { title: t('analytics.quickActions.document.title'), desc: t('analytics.quickActions.document.desc'), icon: FileText, color: "amber", href: "/dashboard/analyze?type=document" },
+    { title: t('analytics.quickActions.batch.title'), desc: t('analytics.quickActions.batch.desc'), icon: Shield, color: "emerald", href: "/dashboard/analyze?type=batch" },
+  ];
+
   return (
     <div className="space-y-6 pb-20 lg:pb-0">
       {/* Welcome Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Analytics Overview</h1>
-          <p className="text-slate-400 mt-1">Welcome back, here's what's happening with your forensic analyses.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">{t('analytics.header.title')}</h1>
+          <p className="text-slate-400 mt-1">{t('analytics.header.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium">
             <Filter className="w-4 h-4" />
-            <span className="hidden sm:inline">Filter</span>
+            <span className="hidden sm:inline">{t('analytics.header.filter')}</span>
           </button>
           <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium">
             <Clock className="w-4 h-4" />
-            <span>Last 7 Days</span>
+            <span>{t('analytics.header.last7days')}</span>
           </button>
         </div>
       </div>
@@ -164,21 +174,21 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-white">Analysis Activity</h3>
-              <p className="text-sm text-slate-400">Weekly breakdown of forensic analyses</p>
+              <h3 className="text-lg font-semibold text-white">{t('analytics.charts.activity.title')}</h3>
+              <p className="text-sm text-slate-400">{t('analytics.charts.activity.subtitle')}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-sky-500" />
-                <span className="text-sm text-slate-400">Total</span>
+                <span className="text-sm text-slate-400">{t('analytics.charts.activity.total')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-sm text-slate-400">Authentic</span>
+                <span className="text-sm text-slate-400">{t('analytics.charts.activity.authentic')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-rose-500" />
-                <span className="text-sm text-slate-400">Manipulated</span>
+                <span className="text-sm text-slate-400">{t('analytics.charts.activity.manipulated')}</span>
               </div>
             </div>
           </div>
@@ -218,8 +228,8 @@ export default function DashboardPage() {
           transition={{ delay: 0.5 }}
           className="rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6"
         >
-          <h3 className="text-lg font-semibold text-white mb-2">Content Distribution</h3>
-          <p className="text-sm text-slate-400 mb-6">Breakdown by media type</p>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('analytics.charts.distribution.title')}</h3>
+          <p className="text-sm text-slate-400 mb-6">{t('analytics.charts.distribution.subtitle')}</p>
           
           <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -267,14 +277,14 @@ export default function DashboardPage() {
       >
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Recent Cases</h3>
-            <p className="text-sm text-slate-400">Latest forensic analyses and their status</p>
+            <h3 className="text-lg font-semibold text-white">{t('analytics.table.title')}</h3>
+            <p className="text-sm text-slate-400">{t('analytics.table.subtitle')}</p>
           </div>
           <Link 
             href="/dashboard/cases" 
             className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 transition-colors"
           >
-            View All
+            {t('analytics.table.viewAll')}
             <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
@@ -283,13 +293,13 @@ export default function DashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-800/50">
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Case ID</th>
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Type</th>
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Title</th>
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Result</th>
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Time</th>
-                <th className="text-right py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">Action</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.id')}</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.type')}</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.title')}</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.status')}</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.result')}</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.time')}</th>
+                <th className="text-right py-4 px-6 text-xs font-medium text-slate-400 uppercase tracking-wider">{t('analytics.table.headers.action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
@@ -320,7 +330,7 @@ export default function DashboardPage() {
                         caseItem.status === 'processing' ? 'bg-sky-400' :
                         'bg-amber-400'
                       }`} />
-                      {caseItem.status.charAt(0).toUpperCase() + caseItem.status.slice(1)}
+                      {t(`analytics.table.status.${caseItem.status}`)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -329,7 +339,7 @@ export default function DashboardPage() {
                         caseItem.result === 'authentic' ? 'text-emerald-400' : 'text-rose-400'
                       }`}>
                         {caseItem.result === 'authentic' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                        {caseItem.result === 'authentic' ? 'Authentic' : 'Manipulated'}
+                        {caseItem.result === 'authentic' ? t('analytics.charts.activity.authentic') : t('analytics.charts.activity.manipulated')}
                         {caseItem.confidence && (
                           <span className="text-slate-500 text-xs">({caseItem.confidence}%)</span>
                         )}
@@ -355,12 +365,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { title: "Image Analysis", desc: "Verify image authenticity", icon: ImageIcon, color: "sky", href: "/dashboard/analyze?type=image" },
-          { title: "Video Forensics", desc: "Detect deepfakes & edits", icon: Video, color: "indigo", href: "/dashboard/analyze?type=video" },
-          { title: "Document Check", desc: "Validate document integrity", icon: FileText, color: "amber", href: "/dashboard/analyze?type=document" },
-          { title: "Batch Processing", desc: "Analyze multiple files", icon: Shield, color: "emerald", href: "/dashboard/analyze?type=batch" },
-        ].map((action, index) => (
+        {quickActions.map((action, index) => (
           <motion.div
             key={action.title}
             initial={{ opacity: 0, y: 20 }}
