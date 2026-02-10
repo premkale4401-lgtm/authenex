@@ -497,10 +497,15 @@ export default function TrustCenterPage() {
   ];
   
   // Generate privacy data from translations
+  // Access nested arrays properly from translation structure
+  const privacyProcessedData = t('legal.privacy.processedData.items');
+  const privacyNeverStored = t('legal.privacy.neverStored.items');
+  const privacyEncryption = t('legal.privacy.encryption.items');
+  
   const privacyData = {
-    processedData: t('legal.privacy.processedData.items') as unknown as string[],
-    neverStored: t('legal.privacy.neverStored.items') as unknown as string[],
-    encryption: t('legal.privacy.encryption.items') as unknown as string[],
+    processedData: Array.isArray(privacyProcessedData) ? (privacyProcessedData as string[]) : [],
+    neverStored: Array.isArray(privacyNeverStored) ? (privacyNeverStored as string[]) : [],
+    encryption: Array.isArray(privacyEncryption) ? (privacyEncryption as string[]) : [],
   };
   
   // Generate security data from translations  
@@ -538,6 +543,7 @@ export default function TrustCenterPage() {
       }
     ]
   };
+  
   return (
     <div className="text-slate-300 relative min-h-screen bg-slate-950">
       {/* Background Effects */}
