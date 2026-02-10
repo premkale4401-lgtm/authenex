@@ -506,6 +506,24 @@ export default function TrustCenterPage() {
     processedData: Array.isArray(privacyProcessedData) ? (privacyProcessedData as string[]) : [],
     neverStored: Array.isArray(privacyNeverStored) ? (privacyNeverStored as string[]) : [],
     encryption: Array.isArray(privacyEncryption) ? (privacyEncryption as string[]) : [],
+    userRights: [
+      {
+        right: t('legal.privacy.rights.items.privacy.title'),
+        description: t('legal.privacy.rights.items.privacy.desc')
+      },
+      {
+        right: t('legal.privacy.rights.items.deletion.title'),
+        description: t('legal.privacy.rights.items.deletion.desc')
+      },
+      {
+        right: t('legal.privacy.rights.items.transparency.title'),
+        description: t('legal.privacy.rights.items.transparency.desc')
+      },
+      {
+        right: t('legal.privacy.rights.items.portability.title'),
+        description: t('legal.privacy.rights.items.portability.desc')
+      }
+    ]
   };
   
   // Generate security data from translations  
@@ -543,6 +561,80 @@ export default function TrustCenterPage() {
       }
     ]
   };
+  
+  // Generate AI Misuse scenarios from translations
+  const aiMisuseScenarios = [
+    {
+      title: t('legal.misuse.scenarios.deepfakeHarassment.title'),
+      desc: t('legal.misuse.scenarios.deepfakeHarassment.desc'),
+      harm: t('legal.misuse.scenarios.deepfakeHarassment.harm'),
+      affected: t('legal.misuse.scenarios.deepfakeHarassment.affected'),
+      action: t('legal.misuse.scenarios.deepfakeHarassment.action')
+    },
+    {
+      title: t('legal.misuse.scenarios.fakeVideos.title'),
+      desc: t('legal.misuse.scenarios.fakeVideos.desc'),
+      harm: t('legal.misuse.scenarios.fakeVideos.harm'),
+      affected: t('legal.misuse.scenarios.fakeVideos.affected'),
+      action: t('legal.misuse.scenarios.fakeVideos.action')
+    },
+    {
+      title: t('legal.misuse.scenarios.fakeDocuments.title'),
+      desc: t('legal.misuse.scenarios.fakeDocuments.desc'),
+      harm: t('legal.misuse.scenarios.fakeDocuments.harm'),
+      affected: t('legal.misuse.scenarios.fakeDocuments.affected'),
+      action: t('legal.misuse.scenarios.fakeDocuments.action')
+    },
+    {
+      title: t('legal.misuse.scenarios.identityImpersonation.title'),
+      desc: t('legal.misuse.scenarios.identityImpersonation.desc'),
+      harm: t('legal.misuse.scenarios.identityImpersonation.harm'),
+      affected: t('legal.misuse.scenarios.identityImpersonation.affected'),
+      action: t('legal.misuse.scenarios.identityImpersonation.action')
+    },
+    {
+      title: t('legal.misuse.scenarios.politicalMisinfo.title'),
+      desc: t('legal.misuse.scenarios.politicalMisinfo.desc'),
+      harm: t('legal.misuse.scenarios.politicalMisinfo.harm'),
+      affected: t('legal.misuse.scenarios.politicalMisinfo.affected'),
+      action: t('legal.misuse.scenarios.politicalMisinfo.action')
+    },
+    {
+      title: t('legal.misuse.scenarios.financialFraud.title'),
+      desc: t('legal.misuse.scenarios.financialFraud.desc'),
+      harm: t('legal.misuse.scenarios.financialFraud.harm'),
+      affected: t('legal.misuse.scenarios.financialFraud.affected'),
+      action: t('legal.misuse.scenarios.financialFraud.action')
+    }
+  ];
+
+  // Generate Legal Framework data from translations
+  const legalFrameworkLaws = [
+    {
+      act: t('legal.legalFramework.laws.it.act'),
+      section: t('legal.legalFramework.laws.it.section'),
+      desc: t('legal.legalFramework.laws.it.desc'),
+      applicability: t('legal.legalFramework.laws.it.applicability')
+    },
+    {
+      act: t('legal.legalFramework.laws.bns.act'),
+      section: t('legal.legalFramework.laws.bns.section'),
+      desc: t('legal.legalFramework.laws.bns.desc'),
+      applicability: t('legal.legalFramework.laws.bns.applicability')
+    },
+    {
+      act: t('legal.legalFramework.laws.copyright.act'),
+      section: t('legal.legalFramework.laws.copyright.section'),
+      desc: t('legal.legalFramework.laws.copyright.desc'),
+      applicability: t('legal.legalFramework.laws.copyright.applicability')
+    },
+    {
+      act: t('legal.legalFramework.laws.indecent.act'),
+      section: t('legal.legalFramework.laws.indecent.section'),
+      desc: t('legal.legalFramework.laws.indecent.desc'),
+      applicability: t('legal.legalFramework.laws.indecent.applicability')
+    }
+  ];
   
   return (
     <div className="text-slate-300 relative min-h-screen bg-slate-950">
