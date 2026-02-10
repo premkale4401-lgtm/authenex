@@ -20,7 +20,23 @@ export async function generatePDFBuffer(
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-  // Add Brand Logo if possible
+  // Add subtle "Checks lines" (Grid Pattern)
+  doc.setDrawColor(30, 41, 59); // Slightly lighter than background
+  doc.setLineWidth(0.1);
+  const gridSize = 10; // 10mm grid
+  
+  // Vertical lines
+  for (let x = 0; x <= pageWidth; x += gridSize) {
+    doc.line(x, 0, x, pageHeight);
+  }
+  
+  // Horizontal lines
+  for (let y = 0; y <= pageHeight; y += gridSize) {
+    doc.line(0, y, pageWidth, y);
+  }
+
+  // Add Brand Logo with dynamic aspect ratio
+  // Use the transparent version of the logo if possible, or the one provided
   const brandLogoUrl = "https://res.cloudinary.com/dyvmqkxok/image/upload/e_background_removal/f_png/v1770664374/WhatsApp_Image_2026-02-10_at_00.39.29_rzzhs5.jpg";
   
   try {
@@ -31,9 +47,30 @@ export async function generatePDFBuffer(
           const base64 = buffer.toString('base64');
           const dataUrl = `data:image/png;base64,${base64}`;
           
-          // Add logo at top left
-          // Adjust dimensions as needed. Assuming landscape-ish logo.
-          doc.addImage(dataUrl, 'PNG', margin, 15, 40, 15); 
+          // Calculate aspect ratio
+          let logoWidth = 50; // Max width target
+          let logoHeight = 20; // Max height target
+          
+          try {
+            const dimensions = sizeOf(buffer);
+            if (dimensions.width && dimensions.height) {
+                const aspectRatio = dimensions.width / dimensions.height;
+                
+                // Fit to width first
+                logoHeight = logoWidth / aspectRatio;
+                
+                // If height exceeds max, scale down by height
+                if (logoHeight > 25) {
+                    logoHeight = 25;
+                    logoWidth = logoHeight * aspectRatio;
+                }
+            }
+          } catch (e) {
+            console.warn("Could not calculate logo dimensions, using defaults");
+          }
+
+          // Add logo at top left (perfectly fitted)
+          doc.addImage(dataUrl, 'PNG', margin, 12, logoWidth, logoHeight); 
       } else {
           // Fallback to text if fetch fails
           doc.setTextColor(6, 182, 212);
@@ -62,9 +99,7 @@ export async function generatePDFBuffer(
   doc.setTextColor(16, 185, 129);
   doc.text('AUTHENEX', pageWidth - margin - 20, 22, { align: 'center' });
 
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text(`Report ID: ${result.reportId} | Generated: ${new Date(result.generatedAt).toLocaleString()}`, margin, 30);
+
 
   const colWidth = (contentWidth - 5) / 2;
   let currentY = 40;
@@ -222,7 +257,12 @@ export async function generatePDFBuffer(
   });
   
   // Content Preview (if available)
-  currentY += 43;
+  doc.setFontSize(6);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Report ID: ${result.reportId}`, leftX, currentY + 39);
+  doc.text(`${new Date(result.generatedAt).toLocaleString()}`, leftX, currentY + 42);
+
+  currentY += 50;
   if (result.content.previewSnippet) {
     doc.setFillColor(15, 23, 42);
     doc.roundedRect(leftX, currentY, colWidth, 25, 2, 2, 'F');
