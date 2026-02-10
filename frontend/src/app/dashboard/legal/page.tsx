@@ -41,6 +41,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 
 // --- Types & Interfaces ---
 
@@ -365,75 +366,7 @@ const remedySteps: StepByStep[] = [
 ];
 
 // --- Data: Action Buttons ---
-
-const actionButtons: ActionButton[] = [
-  {
-    id: "report-cybercrime",
-    label: "Report Cybercrime",
-    description: "National Cyber Crime Reporting Portal for all digital offenses",
-    authority: "Ministry of Home Affairs, Government of India",
-    whenToUse: "Any cybercrime including AI-generated content abuse, identity theft, or online harassment",
-    href: "https://cybercrime.gov.in",
-    icon: Siren,
-    external: true,
-    variant: "urgent"
-  },
-  {
-    id: "file-fir",
-    label: "File Online FIR",
-    description: "State police portals for First Information Report registration",
-    authority: "State Police Departments",
-    whenToUse: "When physical police station visit is not immediately possible; follow up with in-person visit",
-    href: "https://www.digitalpolice.gov.in",
-    icon: FileCheck,
-    external: true,
-    variant: "primary"
-  },
-  {
-    id: "identity-theft",
-    label: "Report Identity Theft",
-    description: "Dedicated portal for identity-related cybercrimes",
-    authority: "Indian Cyber Crime Coordination Centre",
-    whenToUse: "Synthetic identity creation, impersonation, or unauthorized use of personal information",
-    href: "https://cybercrime.gov.in",
-    icon: FingerprintIcon,
-    external: true,
-    variant: "secondary"
-  },
-  {
-    id: "women-child-safety",
-    label: "Women & Child Safety",
-    description: "Specialized reporting for gender-based and child-targeted AI abuse",
-    authority: "National Commission for Women, NCPCR",
-    whenToUse: "Deepfake pornography, non-consensual intimate imagery, child-targeted synthetic content",
-    href: "https://cybercrime.gov.in",
-    icon: ShieldAlert,
-    external: true,
-    variant: "urgent"
-  },
-  {
-    id: "cyber-helpline",
-    label: "National Cyber Helpline",
-    description: "24/7 telephone assistance for cybercrime guidance",
-    authority: "Ministry of Electronics and Information Technology",
-    whenToUse: "Immediate guidance needed, clarification on reporting process, emergency situations",
-    href: "tel:1930",
-    icon: PhoneCall,
-    external: true,
-    variant: "primary"
-  },
-  {
-    id: "sebi-complaint",
-    label: "SEBI Complaint Portal",
-    description: "Securities market fraud and AI-powered investment scams",
-    authority: "Securities and Exchange Board of India",
-    whenToUse: "AI-generated market manipulation, fraudulent investment schemes, synthetic corporate communications",
-    href: "https://scores.sebi.gov.in",
-    icon: Landmark,
-    external: true,
-    variant: "secondary"
-  }
-];
+// Moved to component to use translations dynamically
 
 // --- Components ---
 
@@ -584,7 +517,74 @@ const Timeline = ({ steps }: { steps: StepByStep[] }) => (
 
 // --- Main Page Component ---
 
+
 export default function TrustCenterPage() {
+  const { t } = useLanguage();
+  
+  // Generate action buttons dynamically from translations
+  const actionButtons = [
+    {
+      label: t('legal.actionSection.buttons.reportCybercrime.label'),
+      description: t('legal.actionSection.buttons.reportCybercrime.desc'),
+      authority: t('legal.actionSection.buttons.reportCybercrime.authority'),
+      whenToUse: t('legal.actionSection.buttons.reportCybercrime.when'),
+      href: "https://cybercrime.gov.in",
+      icon: Siren,
+      external: true,
+      variant: "urgent" as const
+    },
+    {
+      label: t('legal.actionSection.buttons.fileFIR.label'),
+      description: t('legal.actionSection.buttons.fileFIR.desc'),
+      authority: t('legal.actionSection.buttons.fileFIR.authority'),
+      whenToUse: t('legal.actionSection.buttons.fileFIR.when'),
+      href: "https://www.digitalpolice.gov.in",
+      icon: FileCheck,
+      external: true,
+      variant: "primary" as const
+    },
+    {
+      label: t('legal.actionSection.buttons.identityTheft.label'),
+      description: t('legal.actionSection.buttons.identityTheft.desc'),
+      authority: t('legal.actionSection.buttons.identityTheft.authority'),
+      whenToUse: t('legal.actionSection.buttons.identityTheft.when'),
+      href: "https://cybercrime.gov.in",
+      icon: FingerprintIcon,
+      external: true,
+      variant: "secondary" as const
+    },
+    {
+      label: t('legal.actionSection.buttons.womenChild.label'),
+      description: t('legal.actionSection.buttons.womenChild.desc'),
+      authority: t('legal.actionSection.buttons.womenChild.authority'),
+      whenToUse: t('legal.actionSection.buttons.womenChild.when'),
+      href: "https://cybercrime.gov.in",
+      icon: ShieldAlert,
+      external: true,
+      variant: "urgent" as const
+    },
+    {
+      label: t('legal.actionSection.buttons.helpline.label'),
+      description: t('legal.actionSection.buttons.helpline.desc'),
+      authority: t('legal.actionSection.buttons.helpline.authority'),
+      whenToUse: t('legal.actionSection.buttons.helpline.when'),
+      href: "tel:1930",
+      icon: PhoneCall,
+      external: true,
+      variant: "primary" as const
+    },
+    {
+      label: t('legal.actionSection.buttons.sebi.label'),
+      description: t('legal.actionSection.buttons.sebi.desc'),
+      authority: t('legal.actionSection.buttons.sebi.authority'),
+      whenToUse: t('legal.actionSection.buttons.sebi.when'),
+      href: "https://scores.sebi.gov.in",
+      icon: Landmark,
+      external: true,
+      variant: "secondary" as const
+    }
+  ];
+  
   return (
     <div className="text-slate-300 relative min-h-screen bg-slate-950">
       {/* Background Effects */}
@@ -609,11 +609,10 @@ export default function TrustCenterPage() {
                National Digital Trust Platform
              </div>
              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-               Privacy, Security & <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">Restoration Center</span>
+               {t('legal.hero.title')}
              </h1>
              <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-               Your comprehensive resource for understanding AI misuse, protecting your digital rights, 
-               and accessing legal remedies. Designed for accuracy, speed, and justice.
+               {t('legal.hero.subtitle')}
              </p>
            </motion.div>
         </section>
@@ -624,9 +623,9 @@ export default function TrustCenterPage() {
              <div>
                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                  <Siren className="w-6 h-6 text-rose-400" />
-                 Take Immediate Action
+                 {t('legal.actionSection.title')}
                </h2>
-               <p className="text-slate-400 mt-1">Urgent resources for victims of cybercrime and AI misuse</p>
+               <p className="text-slate-400 mt-1">{t('legal.actionSection.subtitle')}</p>
              </div>
           </div>
 
