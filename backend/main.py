@@ -50,6 +50,9 @@ from app_models import User, Scan, AuditLog, Verification
 # Authentication imports
 from auth import verify_token, require_role, get_current_user
 
+# Enhanced Gemini Service (ported from AI fraud detection folder)
+from gemini_service import ForensicService
+
 # SQLAlchemy session import
 from sqlalchemy.orm import Session
 
@@ -111,6 +114,7 @@ class ForensicAnalysisResult(BaseModel):
     categoryScores: Dict
     metadata: Dict
     details: Dict
+    detectionLayers: Optional[List[Dict]] = None
     
 class UserLogin(BaseModel):
     uid: str
@@ -497,60 +501,90 @@ async def analyze_asset(
             print(f"Image loaded: {image.size}, {image.mode}")
             gemini_content.append(image)
             
-            prompt = """Analyze this IMAGE for AI generation markers (Midjourney, DALL-E, Stable Diffusion, etc.). 
-            Provide DETAILED layer-by-layer analysis with specific findings for each category.
             
-            Return ONLY valid JSON (no markdown) with this EXACT structure:
-            {
-              "verdict": "AI" | "HUMAN" | "UNCERTAIN",
-              "confidence": <0-100 float>,
-              "aiPercentage": <0-100 float>,
-              "humanPercentage": <0-100 float>,
-              "findings": ["<overall finding 1>", "<overall finding 2>"],
-              "categoryScores": {
-                "texture": <0-100>,
-                "anatomy": <0-100>,
-                "lighting": <0-100>,
-                "background": <0-100>,
-                "semantics": <0-100>
-               },
-              "detectionLayers": [
+            prompt = """
+                You are a FORENSIC SIGNAL EXTRACTION ENGINE.
+
+                TASK:
+                Analyze this IMAGE and REPORT FORENSIC SIGNALS ONLY.
+                Do NOT overthink.
+                Do NOT self-audit.
+                Do NOT downgrade scores.
+
+                DO NOT decide based on philosophy.
+                JUST REPORT WHAT YOU SEE.
+
+                ----------------------------------
+                DETECTION RULES:
+                - If a signal is clearly present → score high
+                - If clearly absent → score low
+                - If unclear → mid score
+                ----------------------------------
+
+                Evaluate the following layers:
+
+                1. Texture irregularities
+                2. Anatomical inconsistencies
+                3. Lighting / shadow violations
+                4. Background / geometry errors
+                5. Semantic anomalies (text, objects)
+
+                ----------------------------------
+
+                Return ONLY JSON in this EXACT format:
+
                 {
-                  "name": "Texture Analysis",
-                  "score": <0-100 AI probability for this layer>,
-                  "weight": 25,
-                  "findings": ["<specific texture finding 1>", "<specific texture finding 2>"]
+                "verdict": "AI" | "HUMAN" | "UNCERTAIN",
+                "confidence": <0-100 float>,
+                "aiPercentage": <0-100 float>,
+                "humanPercentage": <0-100 float>,
+                "findings": ["<dominant signal 1>", "<dominant signal 2>"],
+                "categoryScores": {
+                    "texture": <0-100>,
+                    "anatomy": <0-100>,
+                    "lighting": <0-100>,
+                    "background": <0-100>,
+                    "semantics": <0-100>
                 },
-                {
-                  "name": "Anatomical Consistency",
-                  "score": <0-100 AI probability>,
-                  "weight": 20,
-                  "findings": ["<anatomy finding>"]
-                },
-                {
-                  "name": "Lighting & Shadows",
-                  "score": <0-100 AI probability>,
-                  "weight": 20,
-                  "findings": ["<lighting finding>"]
-                },
-                {
-                  "name": "Background Coherence",
-                  "score": <0-100 AI probability>,
-                  "weight": 15,
-                  "findings": ["<background finding>"]
-                },
-                {
-                  "name": "Semantic Plausibility",
-                  "score": <0-100 AI probability>,
-                  "weight": 20,
-                  "findings": ["<semantic finding>"]
+                "detectionLayers": [
+                    {
+                    "name": "Texture Analysis",
+                    "score": <0-100>,
+                    "weight": 25,
+                    "findings": ["<signal or absence>"]
+                    },
+                    {
+                    "name": "Anatomical Consistency",
+                    "score": <0-100>,
+                    "weight": 20,
+                    "findings": ["<signal or absence>"]
+                    },
+                    {
+                    "name": "Lighting & Shadows",
+                    "score": <0-100>,
+                    "weight": 20,
+                    "findings": ["<signal or absence>"]
+                    },
+                    {
+                    "name": "Background Coherence",
+                    "score": <0-100>,
+                    "weight": 15,
+                    "findings": ["<signal or absence>"]
+                    },
+                    {
+                    "name": "Semantic Plausibility",
+                    "score": <0-100>,
+                    "weight": 20,
+                    "findings": ["<signal or absence>"]
+                    }
+                ],
+                "metadata": {
+                    "potentialModel": null,
+                    "artifactsDetected": ["<artifact or none>"]
                 }
-              ],
-              "metadata": {
-                "potentialModel": "<string or null>",
-                "artifactsDetected": ["<artifact 1>", "<artifact 2>"]
-              }
-            }"""
+                }
+                """
+
             gemini_content.append(prompt)
             
         elif modality == "VIDEO":
@@ -571,7 +605,7 @@ async def analyze_asset(
             with open(temp_filename, "wb") as f:
                 f.write(contents)
                 
-            video_file = client.files.upload(path=temp_filename)
+            video_file = client.files.upload(file=temp_filename)
             print(f"Video uploaded to Gemini: {video_file.name}")
             
             # Wait for processing
@@ -586,27 +620,173 @@ async def analyze_asset(
                 
             gemini_content.append(video_file)
              
-            prompt = """Analyze this VIDEO for Deepfake signatures. 
-            Look for temporal flickering, unnatural eye movement, lip-sync misalignment.
-            
-            Return ONLY valid JSON (no markdown) with this EXACT structure:
+            prompt = """
+            SYSTEM DIRECTIVE (CRITICAL – NON NEGOTIABLE):
+
+            You are operating as a NATIONAL-LEVEL VIDEO FORENSICS ENGINE.
+
+            This is NOT visual impression analysis.
+            This is NOT realism judgment.
+            This is EVIDENCE-DRIVEN AUTHENTICATION.
+
+            You MUST apply court-grade forensic reasoning.
+
+            ABSOLUTE RULES:
+
+            1. NEVER classify AI unless MULTIPLE independent temporal + structural artifacts exist.
+            2. Absence of artifacts LOWERS AI probability.
+            3. Compression artifacts ≠ AI generation.
+            4. Professional cinematography ≠ AI.
+            5. Every score MUST reference DIRECT observable evidence.
+            6. If resolution, frame rate, or quality is insufficient → verdict MUST lean UNCERTAIN.
+            7. Overconfidence is penalized.
+            8. Model guessing forbidden unless artifact patterns strongly align.
+            9. If categories contradict → downgrade verdict.
+            10. One strong indicator alone → UNCERTAIN.
+
+            AI verdict requires:
+            ≥2 STRONG structural indicators OR ≥4 MODERATE temporal indicators.
+
+            You must internally perform:
+
+            A. Frame-Level Artifact Extraction  
+            B. Temporal Stability Analysis  
+            C. Biological Motion Validation  
+            D. Physics Consistency Verification  
+            E. Cross-Layer Correlation  
+            F. Bayesian Aggregation  
+            G. Final Sanity Test: “Would this survive forensic peer review?”
+
+            If not → downgrade.
+
+            ----------------------------------------------------
+
+            ACT AS A FORENSIC VIDEO AUTHENTICITY ANALYZER.
+
+            Analyze this VIDEO for:
+
+            - Pure AI generation
+            - Deepfake face replacement
+            - Synthetic lip-sync
+            - Human recorded footage
+
+            Follow this EXACT pipeline:
+
+            ============================
+            LAYER 1 — TEMPORAL COHERENCE
+            ============================
+
+            Inspect across frames:
+
+            - Identity persistence
+            - Texture regeneration
+            - Facial geometry drift
+            - Flicker artifacts
+            - Micro-jitter
+
+            AI videos often re-synthesize regions frame-to-frame.
+
+            ============================
+            LAYER 2 — BIOLOGICAL DYNAMICS
+            ============================
+
+            Examine:
+
+            - Blink cadence (humans blink irregularly)
+            - Micro-expressions
+            - Lip-phoneme alignment
+            - Gaze stability
+            - Muscle activation realism
+
+            Deepfakes commonly fail biological timing.
+
+            ============================
+            LAYER 3 — PHYSICAL REALISM
+            ============================
+
+            Validate:
+
+            - Center of mass continuity
+            - Gravity adherence
+            - Inertial motion
+            - Foot grounding
+            - Object interaction
+
+            AI frequently violates real-world physics.
+
+            ============================
+            LAYER 4 — SYNTHESIS ARTIFACTS
+            ============================
+
+            Detect:
+
+            - Face boundary halos
+            - Warping near cheeks/ears
+            - Resolution islands
+            - Edge crawling
+            - Texture boiling
+
+            These indicate neural regeneration.
+
+            ============================
+            LAYER 5 — SEMANTIC FLOW
+            ============================
+
+            Check:
+
+            - Scene continuity
+            - Action plausibility
+            - Human spontaneity
+            - Context logic
+
+            ----------------------------------------------------
+
+            CRITICAL CALIBRATION:
+
+            - Low bitrate reduces certainty.
+            - Motion blur ≠ AI.
+            - Studio lighting ≠ AI.
+            - Single anomaly ≠ AI.
+
+            ONLY multi-layer structural failures justify AI.
+
+            ----------------------------------------------------
+
+            Perform weighted aggregation.
+
+            Then perform CONTRADICTION CHECK:
+
+            If any layer strongly supports HUMAN → downgrade AI.
+
+            Before verdict ask internally:
+
+            “Do at least two independent forensic dimensions confirm synthesis?”
+
+            If no → UNCERTAIN.
+
+            ----------------------------------------------------
+
+            Return ONLY valid JSON (NO markdown) with this EXACT structure:
+
             {
-              "verdict": "AI" | "HUMAN" | "UNCERTAIN",
-              "confidence": <0-100 float>,
-              "aiPercentage": <0-100 float>,
-              "humanPercentage": <0-100 float>,
-              "findings": ["<finding 1>", "<finding 2>"],
-              "categoryScores": {
+            "verdict": "AI" | "HUMAN" | "UNCERTAIN",
+            "confidence": <0-100 float>,
+            "aiPercentage": <0-100 float>,
+            "humanPercentage": <0-100 float>,
+            "findings": ["<finding 1>", "<finding 2>"],
+            "categoryScores": {
                 "temporal_consistency": <0-100>,
                 "anatomy": <0-100>,
                 "lighting": <0-100>,
                 "semantics": <0-100>
-               },
-              "metadata": {
+            },
+            "metadata": {
                 "potentialModel": "<string or null>",
                 "artifactsDetected": ["<artifact 1>"]
-              }
-            }"""
+            }
+            }
+            """
+
             gemini_content.append(prompt)
             
         elif modality == "AUDIO":
@@ -614,28 +794,166 @@ async def analyze_asset(
             with open(temp_filename, "wb") as f:
                 f.write(contents)
             
-            audio_file = client.files.upload(path=temp_filename)
+            audio_file = client.files.upload(file=temp_filename)
             gemini_content.append(audio_file)
              
-            prompt = """Analyze this AUDIO for Voice Cloning or Synthetic TTS. 
-            Check for spectral anomalies, robotic cadence, breath patterns.
-            
-            Return ONLY valid JSON (no markdown) with this EXACT structure:
-            {
-              "verdict": "AI" | "HUMAN" | "UNCERTAIN",
-              "confidence": <0-100 float>,
-              "aiPercentage": <0-100 float>,
-              "humanPercentage": <0-100 float>,
-              "findings": ["<finding 1>", "<finding 2>"],
-              "categoryScores": {
-                "spectral_purity": <0-100>,
-                "semantics": <0-100>
-               },
-              "metadata": {
-                "potentialModel": "<string or null>",
-                "artifactsDetected": ["<artifact 1>"]
-              }
-            }"""
+            prompt = """
+                SYSTEM DIRECTIVE (CRITICAL – NON-NEGOTIABLE):
+
+                You are operating as a NATIONAL-LEVEL AUDIO FORENSICS ENGINE.
+
+                This is NOT listening for quality.
+                This is NOT aesthetic evaluation.
+                This is BIOLOGICAL + SPECTRAL EVIDENCE ANALYSIS.
+
+                ABSOLUTE RULES:
+
+                1. NEVER classify AI without MULTIPLE independent biological or spectral indicators.
+                2. Studio-quality audio ≠ AI.
+                3. Noise reduction ≠ AI.
+                4. Compression artifacts ≠ AI.
+                5. Absence of artifacts LOWERS AI probability.
+                6. Every score MUST reference real acoustic evidence.
+                7. If evidence is weak or mixed → verdict MUST be "UNCERTAIN".
+                8. Overconfidence is penalized.
+                9. Model guessing is forbidden unless artifacts strongly match.
+                10. Single indicators NEVER justify an AI verdict.
+
+                AI verdict requires:
+                - ≥2 STRONG biological/spectral failures OR
+                - ≥4 MODERATE failures across layers.
+
+                If not met → UNCERTAIN.
+
+                You must internally perform:
+
+                A. Spectral Artifact Extraction  
+                B. Biological Marker Detection  
+                C. Temporal Micro-Variation Analysis  
+                D. Structural vs Codec Separation  
+                E. Cross-Layer Consistency Check  
+                F. Final Sanity Question:
+                “Would this survive expert acoustic testimony?”
+
+                If no → downgrade verdict and confidence.
+
+                ----------------------------------------------------
+
+                ACT AS A FORENSIC AUDIO AUTHENTICITY ANALYZER.
+
+                Analyze this AUDIO to distinguish:
+
+                - Human-recorded voice
+                - AI Text-to-Speech
+                - Voice Cloning / Conversion
+
+                Follow this EXACT forensic pipeline:
+
+                ============================
+                LAYER 1 — SPECTRAL STRUCTURE
+                ============================
+
+                Inspect:
+
+                - Harmonic continuity
+                - Phase coherence
+                - Formant stability
+                - Over-smoothed frequency bands
+                - Neural vocoder signatures (collapsed harmonics, flat energy regions)
+
+                Modern AI often produces unnaturally uniform spectral energy.
+
+                ============================
+                LAYER 2 — BIOLOGICAL MARKERS
+                ============================
+
+                Listen for:
+
+                - Natural breathing
+                - Saliva clicks
+                - Mouth noise
+                - Micro-hesitations
+                - Imperfect airflow
+
+                Human speech contains chaotic micro-noise.
+                AI usually removes it.
+
+                ============================
+                LAYER 3 — TEMPORAL MICRO-DYNAMICS
+                ============================
+
+                Evaluate:
+
+                - Pitch jitter
+                - Emotional fluctuation
+                - Word boundary imprecision
+                - Timing irregularity
+
+                AI speech is temporally over-aligned.
+
+                ============================
+                LAYER 4 — SYNTHESIS GLITCHES
+                ============================
+
+                Detect:
+
+                - Sudden frequency cutoffs
+                - Digital warbling
+                - Robotic transients
+                - Vocoder ringing
+
+                Exclude codec artifacts.
+
+                ============================
+                LAYER 5 — SEMANTIC NATURALNESS
+                ============================
+
+                Check:
+
+                - Human spontaneity
+                - Natural hesitation
+                - Emotional entropy
+
+                Polished delivery alone ≠ AI.
+
+                ----------------------------------------------------
+
+                CRITICAL CALIBRATION RULES:
+
+                - If recording quality is low → LOWER confidence.
+                - If background noise exists → increases HUMAN probability.
+                - If biological markers are present → downgrade AI.
+                - If only spectral smoothness exists → UNCERTAIN.
+
+                ----------------------------------------------------
+
+                Perform WEIGHTED aggregation.
+
+                Then CONTRADICTION CHECK:
+
+                If any layer strongly supports HUMAN → downgrade AI.
+
+                ----------------------------------------------------
+
+                Return ONLY valid JSON (NO markdown, NO commentary) in this EXACT structure:
+
+                {
+                "verdict": "AI" | "HUMAN" | "UNCERTAIN",
+                "confidence": <0-100 float>,
+                "aiPercentage": <0-100 float>,
+                "humanPercentage": <0-100 float>,
+                "findings": ["<finding 1>", "<finding 2>"],
+                "categoryScores": {
+                    "spectral_purity": <0-100>,
+                    "semantics": <0-100>
+                },
+                "metadata": {
+                    "potentialModel": "<string or null>",
+                    "artifactsDetected": ["<artifact 1>", "<artifact 2>"]
+                }
+                }
+                """
+
             gemini_content.append(prompt)
 
         elif modality == "DOCUMENT":
@@ -690,8 +1008,14 @@ async def analyze_asset(
         elif modality == "TEXT":
             text_content = contents.decode("utf-8", errors="ignore")
             gemini_content.append(text_content)
-            prompt = """Analyze this TEXT for AI generation (LLM markers).
-            Check for repetitive patterns, lack of human nuance, and LLM-specific stylistic markers.
+            prompt = """ACT AS A LINGUISTIC FORENSIC ANALYST. Analyze this TEXT for LLM Generation Markers.
+            
+            Methodology:
+            1. Perplexity & Burstiness: Look for overly uniform sentence structures and lack of vocabulary variance.
+            2. Stylistic Markers: Check for excessive transitional phrases ('Furthermore', 'In conclusion'), moralizing tone, or lack of personal nuisance.
+            3. Hallucinations: detailed but factually incorrect statements.
+            
+            Objective: Determine if this text was written by a HUMAN or an AI MODEL (GPT, Claude, Llama).
             
             Return ONLY valid JSON (no markdown) with this EXACT structure:
             {
@@ -712,47 +1036,33 @@ async def analyze_asset(
             }"""
             gemini_content.append(prompt)
 
-        # Call Gemini API
-        print(f"Calling Gemini API (gemini-2.5-pro)...")
+        # Convert file to base64 for ForensicService (matching source format)
+        import base64
+        file_base64 = base64.b64encode(contents).decode('utf-8')
+        # Add data URI prefix based on mime type
+        data_uri = f"data:{file.content_type};base64,{file_base64}"
         
-        # Use the new google-genai SDK
-        response = client.models.generate_content(
-            model="gemini-2.5-pro",
-            contents=gemini_content
+        print(f"📊 Calling ForensicService.analyze_media() with exact logic from AI fraud detection folder...")
+        
+        # Call the exact ported analysis logic
+        analysis = ForensicService.analyze_media(
+            base64_data=data_uri,
+            mime_type=file.content_type or "application/octet-stream",
+            modality=modality
         )
-        raw_text = response.text
         
-        # Parse JSON response
-        clean_text = raw_text.strip()
-        clean_text = re.sub(r'```json\s*', '', clean_text)
-        clean_text = re.sub(r'```\s*', '', clean_text)
+        print(f"✅ Analysis complete: {analysis.get('verdict')} (confidence: {analysis.get('confidence')}%)")
         
-        print(f"RAW GEMINI RESPONSE: {clean_text[:500]}...") # Log first 500 chars
-
-        try:
-            analysis = json.loads(clean_text)
-            print(f"PARSED JSON KEYS: {list(analysis.keys())}")
-        except json.JSONDecodeError:
-             print(f"JSON DECODE ERROR. Raw text: {raw_text}")
-             # simple fallback if json fails
-             analysis = {
-                 "verdict": "UNCERTAIN",
-                 "confidence": 0,
-                 "aiPercentage": 0,
-                 "humanPercentage": 0,
-                 "findings": ["Failed to parse AI response"],
-                 "categoryScores": {},
-                 "metadata": {"potentialModel": None, "artifactsDetected": []}
-             }
-        
-        # Standardize result
-        ai_score = analysis.get("aiPercentage") or analysis.get("ai_percentage") or analysis.get("aiScore") or 0
-        human_score = analysis.get("humanPercentage") or analysis.get("human_percentage") or analysis.get("humanScore") or 0
+        # Extract scores
+        ai_score = analysis.get("aiPercentage", 50)
+        human_score = analysis.get("humanPercentage", 50)
         
         print(f"🔢 EXTRACTED SCORES - AI: {ai_score}, Human: {human_score}")
         
+        
         # Process detection layers and add status based on score
-        detection_layers = analysis.get("detectionLayers", [])
+        detection_layers = analysis.get("detectionLayers") or []
+        if detection_layers is None: detection_layers = [] # Double safety
         for layer in detection_layers:
             score = layer.get("score", 0)
             if score >= 80:
@@ -810,11 +1120,16 @@ async def analyze_asset(
         db.refresh(scan)
         print(f"✅ Scan result saved to DB (ID: {scan.id})")
         
-        return result
+        
+        # Explicit validation to catch Pydantic errors in our try/except block
+        validated_result = ForensicAnalysisResult(**result)
+        return validated_result
         
     except Exception as e:
-        print(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        print(f"❌ Error processing analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Analysis Error: {str(e)}")
 
 # ... existing code ...
 
@@ -1093,6 +1408,86 @@ async def chat_handler(request: ChatRequest):
             "response": "I'm having trouble connecting to my forensic core. Please try again in a moment.",
             "language": "en"
         }
+
+# ==========================================
+#  NEWS API ENDPOINT
+# ==========================================
+
+@app.get("/api/news")
+async def get_news_feed(category: str = "all", limit: int = 10):
+    """
+    Fetch cybersecurity and forensics news.
+    Falls back to mock data if NewsData API is unavailable.
+    """
+    NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY")
+    
+    # Mock news data for fallback
+    mock_news = [
+        {
+            "id": f"mock-{i}",
+            "title": f"Latest Developments in Deepfake Detection Technology",
+            "summary": "Researchers unveil new AI-powered methods for identifying synthetic media with unprecedented accuracy.",
+            "source": "Authenex Research",
+            "publishedAt": "2024-02-10T09:00:00Z",
+            "imageUrl": None,
+            "url": "#",
+            "category": category if category != "all" else "deepfake",
+            "isLive": False
+        }
+        for i in range(1, min(limit, 10) + 1)
+    ]
+    
+    if not NEWSDATA_API_KEY:
+        print("⚠️ NEWSDATA_API_KEY not configured. Returning mock news.")
+        return {"success": True, "news": mock_news}
+    
+    # News categories mapping
+    category_queries = {
+        "all": "cybersecurity OR deepfake OR digital forensics",
+        "deepfake": "deepfake OR synthetic media",
+        "cybercrime": "cybercrime OR data breach",
+        "ai": "artificial intelligence security",
+        "government": "cybersecurity policy",
+        "cases": "digital forensics cases",
+        "social": "misinformation OR fake news"
+    }
+    
+    query = category_queries.get(category, "cybersecurity")
+    
+    try:
+        api_url = f"https://newsdata.io/api/1/news"
+        params = {
+            "apikey": NEWSDATA_API_KEY,
+            "q": query,
+            "language": "en",
+            "size": min(limit, 10)
+        }
+        
+        response = requests.get(api_url, params=params, timeout=10)
+        data = response.json()
+        
+        if data.get("status") == "success" and data.get("results"):
+            articles = []
+            for article in data["results"][:limit]:
+                articles.append({
+                    "id": article.get("article_id", ""),
+                    "title": article.get("title", "Untitled"),
+                    "summary": article.get("description", "No description available."),
+                    "source": article.get("source_id", "Unknown"),
+                    "publishedAt": article.get("pubDate", ""),
+                    "imageUrl": article.get("image_url"),
+                    "url": article.get("link", "#"),
+                    "category": category,
+                    "isLive": True
+                })
+            return {"success": True, "news": articles}
+        else:
+            print(f"NewsData API returned non-success: {data.get('status')}")
+            return {"success": True, "news": mock_news}
+            
+    except Exception as e:
+        print(f"News API error: {str(e)}")
+        return {"success": True, "news": mock_news}
 
 if __name__ == "__main__":
     import uvicorn
