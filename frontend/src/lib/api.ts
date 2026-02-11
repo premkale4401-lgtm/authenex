@@ -111,7 +111,7 @@ export const getScanHistory = async () => {
     const uid = (session.user as any).uid || (session.user as any).id;
     const authHeaders = await getAuthHeaders();
 
-    const response = await fetch(`${BACKEND_URL}/history/${uid}`, {
+    const response = await fetch(`${BACKEND_URL}/api/history/${uid}`, {
       headers: authHeaders,
     });
     
@@ -124,6 +124,54 @@ export const getScanHistory = async () => {
   } catch (e) {
     console.error("Failed to fetch history:", e);
     return [];
+  }
+};
+
+
+export const getScanById = async (scanId: string) => {
+  try {
+    const authHeaders = await getAuthHeaders();
+    // Ensure we use the correct API endpoint path
+    const response = await fetch(`${BACKEND_URL}/api/scan/${scanId}`, {
+      headers: authHeaders,
+    });
+    
+    if (!response.ok) {
+        // If it fails with integer ID, try parsing if it has CASE- prefix
+        if (scanId.toString().startsWith('CASE-')) {
+             const numericId = scanId.toString().replace('CASE-', '');
+             const retryResponse = await fetch(`${BACKEND_URL}/api/scan/${numericId}`, {
+                headers: authHeaders,
+             });
+             if (retryResponse.ok) return await retryResponse.json();
+        }
+        
+        throw new Error(`Failed to fetch scan: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (e) {
+    console.error("Failed to fetch scan:", e);
+    return null;
+  }
+};
+
+export const deleteScan = async (scanId: string) => {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const response = await fetch(`${BACKEND_URL}/api/scan/${scanId}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Failed to delete scan: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (e) {
+    console.error("Failed to delete scan:", e);
+    return { status: "error", message: e instanceof Error ? e.message : "An unknown error occurred" };
   }
 };
 
@@ -218,6 +266,7 @@ export const updateSystemSetting = async (key: string, value: any, description?:
   return await response.json();
 };
 
+
 export const deleteAccount = async () => {
   const authHeaders = await getAuthHeaders();
   const response = await fetch(`${BACKEND_URL}/api/user/me`, {
@@ -228,3 +277,79 @@ export const deleteAccount = async () => {
   if (!response.ok) throw new Error("Failed to delete account");
   return await response.json();
 };
+
+// ==========================================
+//  DASHBOARD & ADMIN API
+// ==========================================
+
+export const getUserStats = async () => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/user/stats`, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch user stats");
+  return await response.json();
+};
+
+export const getAdminStats = async () => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/admin/stats`, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch admin stats");
+  return await response.json();
+};
+
+export const getAllUsers = async (skip = 0, limit = 100) => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/admin/users?skip=${skip}&limit=${limit}`, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch users");
+  return await response.json();
+};
+
+export const updateUserStatus = async (uid: string, role: string) => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/admin/users/${uid}`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ role }),
+  });
+  
+  if (!response.ok) {
+     const error = await response.json();
+     throw new Error(error.detail || "Failed to update user status");
+  }
+  return await response.json();
+};
+
+export const getAuditLogs = async (limit = 50) => {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/admin/audit?limit=${limit}`, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch audit logs");
+  return await response.json();
+};
+
+export const getVerifications = async (status?: string) => {
+  const authHeaders = await getAuthHeaders();
+  let url = `${BACKEND_URL}/api/admin/verifications`;
+  if (status) url += `?status=${status}`;
+  
+  const response = await fetch(url, {
+    headers: authHeaders,
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch verifications");
+  return await response.json();
+};
+

@@ -1,7 +1,7 @@
 // frontend/src/app/dashboard/cases/page.tsx (Cases Management)
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -30,120 +30,15 @@ import {
   BarChart3
 } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 
-// Mock data for cases
-const casesData = [
-  { 
-    id: "CASE-2045", 
-    title: "Social Media Verification", 
-    type: "image", 
-    status: "completed", 
-    result: "authentic", 
-    date: "2024-01-15", 
-    time: "2 hours ago",
-    confidence: 98,
-    size: "2.4 MB",
-    tags: ["social media", "viral"],
-    analyst: "John Doe"
-  },
-  { 
-    id: "CASE-2044", 
-    title: "News Footage Analysis", 
-    type: "video", 
-    status: "processing", 
-    result: null, 
-    date: "2024-01-15", 
-    time: "5 hours ago",
-    confidence: null,
-    size: "156 MB",
-    tags: ["news", "broadcast"],
-    analyst: "Jane Smith"
-  },
-  { 
-    id: "CASE-2043", 
-    title: "Legal Evidence Review", 
-    type: "image", 
-    status: "completed", 
-    result: "manipulated", 
-    date: "2024-01-14", 
-    time: "1 day ago",
-    confidence: 94,
-    size: "4.1 MB",
-    tags: ["legal", "court"],
-    analyst: "John Doe"
-  },
-  { 
-    id: "CASE-2042", 
-    title: "Contract Authenticity", 
-    type: "document", 
-    status: "completed", 
-    result: "authentic", 
-    date: "2024-01-14", 
-    time: "1 day ago",
-    confidence: 99,
-    size: "1.2 MB",
-    tags: ["business", "contract"],
-    analyst: "Mike Johnson"
-  },
-  { 
-    id: "CASE-2041", 
-    title: "Surveillance Footage", 
-    type: "video", 
-    status: "pending", 
-    result: null, 
-    date: "2024-01-13", 
-    time: "2 days ago",
-    confidence: null,
-    size: "890 MB",
-    tags: ["security", "surveillance"],
-    analyst: "Jane Smith"
-  },
-  { 
-    id: "CASE-2040", 
-    title: "Product Image Verification", 
-    type: "image", 
-    status: "completed", 
-    result: "authentic", 
-    date: "2024-01-13", 
-    time: "2 days ago",
-    confidence: 97,
-    size: "3.5 MB",
-    tags: ["e-commerce", "product"],
-    analyst: "John Doe"
-  },
-  { 
-    id: "CASE-2039", 
-    title: "Political Speech Video", 
-    type: "video", 
-    status: "completed", 
-    result: "manipulated", 
-    date: "2024-01-12", 
-    time: "3 days ago",
-    confidence: 91,
-    size: "234 MB",
-    tags: ["political", "deepfake"],
-    analyst: "Mike Johnson"
-  },
-  { 
-    id: "CASE-2038", 
-    title: "Passport Document Check", 
-    type: "document", 
-    status: "completed", 
-    result: "authentic", 
-    date: "2024-01-12", 
-    time: "3 days ago",
-    confidence: 100,
-    size: "0.8 MB",
-    tags: ["identity", "passport"],
-    analyst: "Jane Smith"
-  },
-];
+import { getScanHistory, deleteScan } from "@/lib/api";
 
 const statusFilters = [
-  { id: "all", label: "All Cases", count: 156 },
-  { id: "completed", label: "Completed", count: 124 },
-  { id: "processing", label: "Processing", count: 18 },
-  { id: "pending", label: "Pending", count: 14 },
+  { id: "all", label: "All Cases", count: 0 },
+  { id: "completed", label: "Completed", count: 0 },
+  { id: "processing", label: "Processing", count: 0 },
+  { id: "pending", label: "Pending", count: 0 },
 ];
 
 const typeFilters = [
@@ -153,7 +48,6 @@ const typeFilters = [
   { id: "document", label: "Documents" },
 ];
 
-import { useLanguage } from "@/context/LanguageContext";
 
 export default function CasesPage() {
   const { t } = useLanguage();
@@ -161,19 +55,37 @@ export default function CasesPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<{ field: string; order: "asc" | "desc" }>({ field: "date", order: "desc" });
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Real data state
+  const [cases, setCases] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data on mount
+  useEffect(() => {
+    async function loadCases() {
+      try {
+        const data = await getScanHistory();
+        setCases(data);
+      } catch (error) {
+        console.error("Failed to load cases", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCases();
+  }, []); // Empty dependency array for mount only
 
   // Filter and sort cases
-  const filteredCases = casesData.filter((caseItem) => {
+  const filteredCases = cases.filter((caseItem) => {
     const matchesStatus = selectedStatus === "all" || caseItem.status === selectedStatus;
     const matchesType = selectedType === "all" || caseItem.type === selectedType;
     const matchesSearch = 
-      caseItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      caseItem.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      caseItem.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      (caseItem.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (caseItem.scanId || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (Array.isArray(caseItem.tags) && caseItem.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     return matchesStatus && matchesType && matchesSearch;
   }).sort((a, b) => {
     const order = sortBy.order === "asc" ? 1 : -1;
@@ -186,17 +98,35 @@ export default function CasesPage() {
     return 0;
   });
 
-  const toggleCaseSelection = (id: string) => {
-    setSelectedCases(prev => 
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-    );
+  // Calculate dynamic counts
+  const statusCounts = {
+    all: cases.length,
+    completed: cases.filter(c => c.status === "completed").length,
+    processing: cases.filter(c => c.status === "processing").length,
+    pending: cases.filter(c => c.status === "pending").length,
   };
 
-  const selectAllCases = () => {
-    if (selectedCases.length === filteredCases.length) {
-      setSelectedCases([]);
-    } else {
-      setSelectedCases(filteredCases.map(c => c.id));
+  const currentStatusFilters = statusFilters.map(f => ({
+    ...f,
+    count: statusCounts[f.id as keyof typeof statusCounts] || 0
+  }));
+
+
+  const handleDeleteCase = async (id: string | number) => {
+    if (!window.confirm("Are you sure you want to delete this case? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      const response = await deleteScan(id.toString());
+      if (response && response.status === "success") {
+        setCases(prev => prev.filter(c => c.id.toString() !== id.toString()));
+      } else {
+        alert("Failed to delete case: " + (response?.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Delete failed", error);
+      alert("Delete failed. Please try again.");
     }
   };
 
@@ -223,6 +153,14 @@ export default function CasesPage() {
     }
   };
 
+  if (loading) {
+      return (
+          <div className="flex items-center justify-center min-h-[60vh]">
+              <Loader2 className="w-8 h-8 text-sky-500 animate-spin" />
+          </div>
+      );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -244,7 +182,7 @@ export default function CasesPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statusFilters.map((filter) => (
+        {currentStatusFilters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => setSelectedStatus(filter.id)}
@@ -315,36 +253,7 @@ export default function CasesPage() {
         </div>
       </div>
 
-      {/* Bulk Actions */}
-      {selectedCases.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-4 bg-sky-500/10 border border-sky-500/20 rounded-xl"
-        >
-          <span className="text-sky-400 font-medium">{selectedCases.length} cases selected</span>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-300 hover:text-white transition-colors">
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-300 hover:text-white transition-colors">
-              <Share2 className="w-4 h-4" />
-              Share
-            </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-rose-400 hover:text-rose-300 transition-colors">
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </button>
-            <button 
-              onClick={() => setSelectedCases([])}
-              className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
-      )}
+      {/* Bulk Actions Removed */}
 
       {/* Cases Display */}
       <AnimatePresence mode="wait">
@@ -360,14 +269,7 @@ export default function CasesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-800 bg-slate-900/80">
-                    <th className="py-4 px-4 text-left">
-                      <input
-                        type="checkbox"
-                        checked={selectedCases.length === filteredCases.length && filteredCases.length > 0}
-                        onChange={selectAllCases}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-sky-500/20"
-                      />
-                    </th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider w-10">#</th>
                     <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.case')}</th>
                     <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.type')}</th>
                     <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -379,17 +281,9 @@ export default function CasesPage() {
                         <ArrowUpDown className="w-3 h-3" />
                       </button>
                     </th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.status')}</th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.result')}</th>
-                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      <button 
-                        onClick={() => setSortBy({ field: "confidence", order: sortBy.order === "asc" ? "desc" : "asc" })}
-                        className="flex items-center gap-1 hover:text-white transition-colors"
-                      >
-                        {t('cases.table.confidence')}
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">AI SCORE</th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">HUMAN SCORE</th>
+                    <th className="py-4 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">VERDICT</th>
                     <th className="py-4 px-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">{t('cases.table.actions')}</th>
                   </tr>
                 </thead>
@@ -401,13 +295,8 @@ export default function CasesPage() {
                       animate={{ opacity: 1 }}
                       className="hover:bg-slate-800/30 transition-colors group"
                     >
-                      <td className="py-4 px-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedCases.includes(caseItem.id)}
-                          onChange={() => toggleCaseSelection(caseItem.id)}
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-sky-500/20"
-                        />
+                      <td className="py-4 px-4 text-slate-500 text-xs font-mono">
+                        {filteredCases.indexOf(caseItem) + 1}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
@@ -416,11 +305,11 @@ export default function CasesPage() {
                           </div>
                           <div>
                             <Link href={`/dashboard/cases/${caseItem.id}`} className="font-mono text-sm text-sky-400 hover:text-sky-300">
-                              {caseItem.id}
+                              {caseItem.scanId || caseItem.id}
                             </Link>
                             <p className="text-sm text-white font-medium">{caseItem.title}</p>
                             <div className="flex gap-1 mt-1">
-                              {caseItem.tags.map(tag => (
+                              {Array.isArray(caseItem.tags) && caseItem.tags.map((tag: string) => (
                                 <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded">
                                   {tag}
                                 </span>
@@ -430,21 +319,31 @@ export default function CasesPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="capitalize text-sm text-slate-300">{t(`analyze.types.${caseItem.type}`)}</span>
+                        <span className="text-sm text-slate-300">{caseItem.type ? t(`analyze.types.${caseItem.type}`) : "Unknown"}</span>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="text-sm text-slate-300">{caseItem.date}</div>
+                        <div className="text-sm text-slate-300 font-medium">{caseItem.date}</div>
                         <div className="text-xs text-slate-500">{caseItem.time}</div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(caseItem.status)}`}>
-                          {caseItem.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                          {t(`cases.filters.${caseItem.status}`)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                           <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-rose-500" style={{ width: `${caseItem.aiPercentage || 0}%` }} />
+                           </div>
+                           <span className="text-sm font-bold text-rose-400">{caseItem.aiPercentage || 0}%</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                           <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500" style={{ width: `${caseItem.humanPercentage || 0}%` }} />
+                           </div>
+                           <span className="text-sm font-bold text-emerald-400">{caseItem.humanPercentage || 0}%</span>
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         {caseItem.result ? (
-                          <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${getResultColor(caseItem.result)}`}>
+                          <span className={`inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider ${getResultColor(caseItem.result)}`}>
                             {caseItem.result === "authentic" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                             {caseItem.result === "authentic" ? t('analyze.results.authentic') : t('analyze.results.aiGenerated')}
                           </span>
@@ -452,32 +351,28 @@ export default function CasesPage() {
                           <span className="text-slate-500 text-sm">-</span>
                         )}
                       </td>
-                      <td className="py-4 px-4">
-                        {caseItem.confidence ? (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${caseItem.confidence >= 90 ? 'bg-emerald-500' : caseItem.confidence >= 70 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                                style={{ width: `${caseItem.confidence}%` }}
-                              />
-                            </div>
-                            <span className="text-sm text-slate-300">{caseItem.confidence}%</span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-500 text-sm">-</span>
-                        )}
-                      </td>
                       <td className="py-4 px-4 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
+                          <Link 
+                            href={`/dashboard/cases/${caseItem.id}`}
+                            className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                          >
                             <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
+                          </Link>
+                          <div className="relative group/menu">
+                            <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            <div className="absolute right-0 top-full mt-1 hidden group-hover/menu:block z-50 min-w-[120px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-1">
+                                <button 
+                                  onClick={() => handleDeleteCase(caseItem.id)}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  Delete Case
+                                </button>
+                            </div>
+                          </div>
                         </div>
                       </td>
                     </motion.tr>
@@ -514,22 +409,18 @@ export default function CasesPage() {
                       {getTypeIcon(caseItem.type)}
                     </div>
                     <div>
-                      <p className="font-mono text-xs text-sky-400">{caseItem.id}</p>
+                      <p className="font-mono text-xs text-sky-400">{caseItem.scanId || caseItem.id}</p>
                       <p className="text-sm text-slate-500 capitalize">{t(`analyze.types.${caseItem.type}`)}</p>
                     </div>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={selectedCases.includes(caseItem.id)}
-                    onChange={() => toggleCaseSelection(caseItem.id)}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-sky-500"
-                  />
                 </div>
 
-                <h3 className="font-semibold text-white mb-2 line-clamp-1">{caseItem.title}</h3>
+                <Link href={`/dashboard/cases/${caseItem.id}`} className="block">
+                    <h3 className="font-semibold text-white mb-2 line-clamp-1 hover:text-sky-400 transition-colors">{caseItem.title}</h3>
+                </Link>
                 
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {caseItem.tags.map(tag => (
+                  {Array.isArray(caseItem.tags) && caseItem.tags.map((tag: string) => (
                     <span key={tag} className="text-[10px] px-2 py-1 bg-slate-800 text-slate-400 rounded-lg">
                       {tag}
                     </span>
@@ -538,48 +429,46 @@ export default function CasesPage() {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">{t('cases.table.status')}</span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(caseItem.status)}`}>
-                      {caseItem.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {t(`cases.filters.${caseItem.status}`)}
-                    </span>
+                    <span className="text-slate-500">AI SCORE</span>
+                    <span className="text-rose-400 font-bold">{caseItem.aiPercentage || 0}%</span>
                   </div>
                   
-                  {caseItem.result && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">{t('cases.table.result')}</span>
-                      <span className={`flex items-center gap-1 ${getResultColor(caseItem.result)}`}>
-                        {caseItem.result === "authentic" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                        {caseItem.result === "authentic" ? t('analyze.results.authentic') : t('analyze.results.aiGenerated')}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">HUMAN SCORE</span>
+                    <span className="text-emerald-400 font-bold">{caseItem.humanPercentage || 0}%</span>
+                  </div>
 
-                  {caseItem.confidence && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">{t('cases.table.confidence')}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full ${caseItem.confidence >= 90 ? 'bg-emerald-500' : caseItem.confidence >= 70 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                            style={{ width: `${caseItem.confidence}%` }}
-                          />
-                        </div>
-                        <span className="text-slate-300">{caseItem.confidence}%</span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">VERDICT</span>
+                    <span className={`font-bold ${getResultColor(caseItem.result)}`}>
+                      {caseItem.result === "authentic" ? t('analyze.results.authentic') : t('analyze.results.aiGenerated')}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-800">
                   <span className="text-xs text-slate-500">{caseItem.time}</span>
-                  <div className="flex gap-1">
-                    <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
+                  <div className="flex gap-1 items-center">
+                    <Link 
+                        href={`/dashboard/cases/${caseItem.id}`}
+                        className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                    >
                       <Eye className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
-                      <Download className="w-4 h-4" />
-                    </button>
+                    </Link>
+                    <div className="relative group/menu">
+                      <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      <div className="absolute right-0 bottom-full mb-1 hidden group-hover/menu:block z-50 min-w-[120px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-1">
+                          <button 
+                            onClick={() => handleDeleteCase(caseItem.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete Case
+                          </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -591,7 +480,7 @@ export default function CasesPage() {
       {/* Pagination */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-800">
         <p className="text-sm text-slate-400">
-          Showing <span className="text-white font-medium">1</span> to <span className="text-white font-medium">{filteredCases.length}</span> of <span className="text-white font-medium">156</span> cases
+          Showing <span className="text-white font-medium">1</span> to <span className="text-white font-medium">{filteredCases.length}</span> of <span className="text-white font-medium">{cases.length}</span> cases
         </p>
         <div className="flex items-center gap-2">
           <button 
@@ -601,7 +490,7 @@ export default function CasesPage() {
             <ChevronLeft className="w-4 h-4" />
           </button>
           <div className="flex gap-1">
-            {[1, 2, 3].map(page => (
+            {[1].map(page => (
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
@@ -614,10 +503,6 @@ export default function CasesPage() {
                 {page}
               </button>
             ))}
-            <span className="w-8 h-8 flex items-center justify-center text-slate-500">...</span>
-            <button className="w-8 h-8 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-              12
-            </button>
           </div>
           <button 
             className="p-2 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors"

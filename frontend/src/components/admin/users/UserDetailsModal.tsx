@@ -7,7 +7,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'ANALYST' | 'USER';
+  role: 'ADMIN' | 'ANALYST' | 'USER' | 'SUSPENDED';
   status: 'ACTIVE' | 'PENDING' | 'SUSPENDED';
   lastLogin: string;
   verifications: number;
@@ -23,7 +23,8 @@ export default function UserDetailsModal({ user, onClose }: UserDetailsModalProp
   const roleStyles = {
     ADMIN: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
     ANALYST: 'bg-sky-500/20 text-sky-400 border-sky-500/30',
-    USER: 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+    USER: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+    SUSPENDED: 'bg-red-500/20 text-red-400 border-red-500/30'
   };
 
   const statusStyles = {

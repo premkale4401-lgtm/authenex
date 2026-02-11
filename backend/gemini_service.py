@@ -63,7 +63,7 @@ class GeminiAuthService:
             import base64
             
             ai = GeminiAuthService.get_ai()
-            model_name = 'gemini-2.0-flash-exp'
+            model_name = 'gemini-2.5-pro'
             
             # Set system prompt based on modality (EXACT from source)
                 
@@ -504,7 +504,7 @@ class GeminiAuthService:
             
             # First API call: Get news with web search
             response = ai.models.generate_content(
-                model='gemini-2.0-flash-exp',
+                model='gemini-2.5-pro',
                 contents="Summarize 3 recent cases of deepfake fraud or AI-related crime specifically in Maharashtra, India from 2024-2025. Be concise.",
                 config=types.GenerateContentConfig(
                     tools=[types.Tool(google_search=types.GoogleSearch())]
@@ -529,7 +529,7 @@ class GeminiAuthService:
             
             # Second API call: Parse into structured JSON
             parser_response = ai.models.generate_content(
-                model='gemini-2.0-flash-exp',
+                model='gemini-2.5-pro',
                 contents=f"Convert this news into JSON. Add a field 'imageSearchTerm' with 2 relevant keywords for an Unsplash image search based on the story. Content: {text}",
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",

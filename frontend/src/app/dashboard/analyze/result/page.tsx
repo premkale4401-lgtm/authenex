@@ -20,6 +20,7 @@ import {
   Type,
   ChevronRight,
   ChevronDown,
+  Loader2,
   Maximize2,
   Minimize2,
   Info,
@@ -379,25 +380,18 @@ export default function AnalysisResultPage() {
             </div>
             
             <div className="flex items-center gap-3">
-
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={() => handleDownload('pdf')}
                 disabled={isGeneratingReport}
-                className="px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-slate-300 text-sm font-medium flex items-center gap-2 transition-all disabled:opacity-50"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all border border-slate-700 disabled:opacity-50"
               >
                 {isGeneratingReport ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Download className="w-4 h-4" />
                 )}
-
-                {t("dashboard.recentAnalysis.actions.download")}
-              </motion.button>
-              
-
+                {t("analyze.results.downloadReport")}
+              </button>
               
               <Link
                 href="/dashboard/analyze"

@@ -159,13 +159,40 @@ class SystemSettingUpdate(BaseModel):
     value: Dict
     description: Optional[str] = None
 
+
+# ==========================================
+#  SECURITY DEPENDENCIES
+# ==========================================
+
+async def get_active_user(
+    token_payload: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    """
+    Dependency that ensures the user exists and is not suspended.
+    This prevents suspended users from accessing the API even with a valid JWT.
+    """
+    uid = token_payload["sub"]
+    user = db.query(User).filter(User.uid == uid).first()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    if user.role == "SUSPENDED":
+        raise HTTPException(
+            status_code=403, 
+            detail="Your account has been suspended. Please contact support."
+        )
+        
+    return token_payload
+
 # ==========================================
 #  USER SETTINGS ENDPOINTS
 # ==========================================
 
 @app.get("/api/settings/user")
 async def get_user_settings(
-    user: dict = Depends(verify_token),
+    user: dict = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     """Fetch current user settings and profile"""
@@ -208,7 +235,7 @@ async def get_user_settings(
 @app.patch("/api/settings/user")
 async def update_user_settings(
     settings: UserSettingsUpdate,
-    user: dict = Depends(verify_token),
+    user: dict = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     """Update user preferences and security settings"""
@@ -248,7 +275,7 @@ async def update_user_settings(
 @app.post("/api/user/profile")
 async def update_user_profile(
     profile: UserProfileUpdate,
-    user: dict = Depends(verify_token),
+    user: dict = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     """Update public profile information"""
@@ -267,7 +294,7 @@ async def update_user_profile(
 
 @app.get("/api/user/stats")
 async def get_user_stats(
-    user: dict = Depends(verify_token),
+    user: dict = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -400,7 +427,7 @@ async def update_system_setting(
 
 @app.delete("/api/user/me")
 async def delete_account(
-    current_user: dict = Depends(verify_token),
+    current_user: dict = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     try:
@@ -427,6 +454,158 @@ async def delete_account(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ==========================================
+#  ADMIN ENDPOINTS
+# ==========================================
+
+@app.get("/api/admin/stats")
+async def get_admin_stats(
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """
+    Get system-wide statistics for Admin Dashboard
+    """
+    from sqlalchemy import func
+    
+    total_users = db.query(func.count(User.uid)).scalar() or 0
+    total_scans = db.query(func.count(Scan.id)).scalar() or 0
+    ai_fraud_count = db.query(func.count(Scan.id)).filter(Scan.verdict == "AI").scalar() or 0
+    deepfakes_detected = db.query(func.count(Scan.id)).filter(Scan.verdict == "AI", Scan.modality.in_(["VIDEO", "AUDIO"])).scalar() or 0
+    
+    # Role counts
+    admins_count = db.query(func.count(User.uid)).filter(User.role == "ADMIN").scalar() or 0
+    analysts_count = db.query(func.count(User.uid)).filter(User.role == "ANALYST").scalar() or 0
+    users_count = db.query(func.count(User.uid)).filter(User.role == "USER").scalar() or 0
+    suspended_count = db.query(func.count(User.uid)).filter(User.role == "SUSPENDED").scalar() or 0
+
+    return {
+        "totalUsers": total_users,
+        "totalScans": total_scans,
+        "aiFraudCount": ai_fraud_count,
+        "deepfakesDetected": deepfakes_detected,
+        "activeVerifications": db.query(func.count(Verification.id)).filter(Verification.status == "PENDING").scalar() or 0,
+        "roleDistribution": {
+            "ADMIN": admins_count,
+            "ANALYST": analysts_count,
+            "USER": users_count,
+            "SUSPENDED": suspended_count
+        }
+    }
+
+@app.get("/api/admin/users")
+async def get_all_users(
+    skip: int = 0,
+    limit: int = 100,
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """
+    List all users with pagination
+    """
+    users = db.query(User).offset(skip).limit(limit).all()
+    
+    return [
+        {
+            "uid": u.uid,
+            "email": u.email,
+            "displayName": u.display_name,
+            "role": u.role,
+            "photoURL": u.photo_url,
+            "createdAt": u.created_at.isoformat() if u.created_at else None,
+            "status": "Suspended" if u.role == "SUSPENDED" else "Active"
+        }
+        for u in users
+    ]
+
+@app.put("/api/admin/users/{uid}")
+async def update_user_status(
+    uid: str,
+    update_data: dict,  # Expects {"role": "..."}
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """
+    Update user role/status (e.g. Suspend, Activate, Promote)
+    """
+    user = db.query(User).filter(User.uid == uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if "role" in update_data:
+        new_role = update_data["role"]
+        # Validate role
+        if new_role not in ["USER", "ADMIN", "ANALYST", "SUSPENDED"]:
+             raise HTTPException(status_code=400, detail="Invalid role")
+             
+        # Prevent self-suspension if it's the only admin (simplified check)
+        if uid == admin["sub"] and new_role == "SUSPENDED":
+             raise HTTPException(status_code=400, detail="You cannot suspend yourself")
+             
+        user.role = new_role
+        
+    db.commit()
+    
+    # Log action
+    db.add(AuditLog(
+        uid=admin["sub"],
+        action="USER_UPDATE",
+        details={"target_uid": uid, "changes": update_data}
+    ))
+    db.commit()
+    
+    return {"status": "success", "message": f"User {uid} updated"}
+
+@app.get("/api/admin/audit")
+async def get_audit_logs(
+    limit: int = 50,
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recent audit logs
+    """
+    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(limit).all()
+    
+    return [
+        {
+            "id": l.id,
+            "action": l.action,
+            "uid": l.uid,
+            "details": l.details,
+            "timestamp": l.timestamp.isoformat(),
+            "ip": l.ip_address
+        }
+        for l in logs
+    ]
+
+@app.get("/api/admin/verifications")
+async def get_verifications(
+    status: Optional[str] = None,
+    limit: int = 20,
+    admin: dict = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """
+    Get verification requests
+    """
+    query = db.query(Verification)
+    if status:
+        query = query.filter(Verification.status == status)
+        
+    verifications = query.order_by(Verification.created_at.desc()).limit(limit).all()
+    
+    return [
+        {
+            "id": v.id,
+            "scanId": v.scan_id,
+            "status": v.status,
+            "notes": v.notes,
+            "createdAt": v.created_at.isoformat()
+        }
+        for v in verifications
+    ]
 
 @app.get("/")
 async def root():
@@ -632,55 +811,13 @@ async def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
     return {"status": "success", "message": "User synced"}
 
 
-@app.get("/history/{uid}")
-async def get_history(
-    uid: str,
-    user: dict = Depends(verify_token),  # ✅ JWT required
-    db: Session = Depends(get_db)
-):
-    """
-    Get scan history for a user.
-    
-    Security:
-        - Requires valid JWT token
-        - Users can only access their own history
-        - Admins can access any user's history
-    """
-    print(f"Fetching history for: {uid}")
-    
-    # SECURITY: Verify user can only access their own history (unless admin)
-    user_role = user.get("role", "USER")
-    if uid != user["sub"] and user_role != "ADMIN":
-        raise HTTPException(
-            status_code=403,
-            detail="Forbidden: You can only access your own scan history"
-        )
-    
-    scans = db.query(Scan).filter(Scan.uid == uid).order_by(Scan.created_at.desc()).all()
-    
-    return [
-        {
-            "id": s.id,
-            "filename": s.filename,
-            "fileType": s.file_type,
-            "modality": s.modality,
-            "verdict": s.verdict,
-            "confidence": s.confidence,
-            "aiPercentage": s.ai_percentage,
-            "humanPercentage": s.human_percentage,
-            "model": s.model,
-            "reasoning": s.reasoning,
-            "created_at": s.created_at.isoformat(),
-            "details": s.details
-        }
-        for s in scans
-    ]
+
 
 @app.post("/analyze", response_model=ForensicAnalysisResult)
 async def analyze_asset(
     file: UploadFile = File(...),
     modality: str = "IMAGE",
-    user: dict = Depends(verify_token),  # ✅ JWT required
+    user: dict = Depends(get_active_user),  # ✅ Checks status
     db: Session = Depends(get_db)
 ):
     """
@@ -1341,6 +1478,125 @@ async def analyze_asset(
 
 # ... existing code ...
 
+# ==========================================
+#  HISTORY API ENDPOINT
+# ==========================================
+
+@app.get("/api/history/{uid}")
+async def get_user_history(
+    uid: str,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_active_user)
+):
+    """
+    Get scan history for a specific user.
+    Ensures users can only access their own history unless they are ADMIN.
+    """
+    # Authorization check
+    if current_user["sub"] != uid and current_user.get("role") != "ADMIN":
+         raise HTTPException(status_code=403, detail="Unauthorized access to this history")
+         
+    scans = db.query(Scan).filter(Scan.uid == uid).order_by(Scan.created_at.desc()).limit(limit).all()
+    
+    
+    # Safely construct response items
+    response = []
+    for s in scans:
+        modality = s.modality or "unknown"
+        verdict_val = s.verdict or "unknown"
+        
+        # Map DB verdict to Frontend expectation
+        if verdict_val == "HUMAN":
+            result_mapped = "authentic"
+        elif verdict_val == "AI":
+            result_mapped = "aiGenerated"
+        else:
+            result_mapped = None
+            
+        confidence = int(s.confidence) if s.confidence else 0
+        
+        ai_pct = s.ai_percentage if s.ai_percentage is not None else 0
+        human_pct = s.human_percentage if s.human_percentage is not None else 0
+        
+        print(f"DEBUG: Case {s.id} scores -> AI: {ai_pct}, Human: {human_pct}")
+        
+        response.append({
+            "id": s.id,
+            "scanId": f"CASE-{s.id}", 
+            "title": f"{modality.title()} Analysis",
+            "filename": s.filename,
+            "type": modality.lower(),
+            "status": "completed",
+            "result": result_mapped,
+            "verdict": verdict_val, # Raw DB verdict (AI/HUMAN)
+            "date": s.created_at.strftime("%Y-%m-%d"),
+            "time": s.created_at.strftime("%H:%M"),
+            "timestamp": s.created_at.isoformat(),
+            "confidence": confidence,
+            "aiPercentage": int(ai_pct),
+            "humanPercentage": int(human_pct),
+            "size": "N/A",
+            "tags": [modality.lower(), result_mapped if result_mapped else "unknown"],
+            "analyst": "AI System"
+        })
+        
+    return response
+
+@app.get("/api/scan/{scan_id}")
+async def get_scan_details(
+    scan_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_active_user)
+):
+    """
+    Get full details for a specific scan.
+    """
+    scan = db.query(Scan).filter(Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    # Authorization check
+    if current_user["sub"] != scan.uid and current_user.get("role") != "ADMIN":
+         raise HTTPException(status_code=403, detail="Unauthorized access to this scan")
+         
+    return {
+        "id": scan.id,
+        "uid": scan.uid,
+        "filename": scan.filename,
+        "modality": scan.modality,
+        "verdict": scan.verdict,
+        "confidence": scan.confidence,
+        "aiPercentage": scan.ai_percentage,
+        "humanPercentage": scan.human_percentage,
+        "details": scan.details, # JSON field
+        "created_at": scan.created_at.isoformat(),
+        "model": scan.model
+    }
+
+
+@app.delete("/api/scan/{scan_id}")
+async def delete_scan(
+    scan_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_active_user)
+):
+    """
+    Delete a specific scan.
+    """
+    scan = db.query(Scan).filter(Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    # Authorization check
+    if current_user["sub"] != scan.uid and current_user.get("role") != "ADMIN":
+         raise HTTPException(status_code=403, detail="Unauthorized access to delete this scan")
+         
+    db.delete(scan)
+    db.commit()
+    
+    return {"status": "success", "message": "Scan deleted successfully"}
+
 # News Models & Data
 class NewsItem(BaseModel):
     id: str
@@ -1539,7 +1795,7 @@ async def chat_handler(request: ChatRequest):
 
         # System Instruction
         system_instruction = f"""
-        You are Authenex AI, a hyper-intelligent, multilingual assistant embedded within the Authenex Digital Forensics Platform.
+        You are Authenex AI, a hyper-intelligent, multilingual female assistant embedded within the Authenex Digital Forensics Platform.
         
         CRITICAL RULES:
         1. OUTPUT FORMAT: You must return ONLY valid JSON (no markdown fencing) with the following structure:
@@ -1549,7 +1805,7 @@ async def chat_handler(request: ChatRequest):
            }}
         2. LANGUAGE: FLUENTLY speak the user's language. If the user speaks Hindi, reply in Hindi. If mixed (Hinglish), reply in mixed. Default to English only if unsure.
         3. KNOWLEDGE: You are an expert in EVERYTHING. Answer ALL questions (general knowledge, coding, history, science, etc.) accurately. Do NOT restrict yourself to forensics.
-        4. PERSONA: You are helpful, smart, professional, and friendly.
+        4. PERSONA: You are a helpful, smart, professional, and friendly female assistant. Maintain a polite and reassuring feminine tone in your responses.
         5. NAVIGATION: You have control over the app. If the user asks to go somewhere, you MUST include a navigation command in your 'response' text.
            - Format: `[[NAVIGATE:/exact/path]]`
            - Example: "Sure, let me take you to the settings. [[NAVIGATE:/dashboard/settings]]"

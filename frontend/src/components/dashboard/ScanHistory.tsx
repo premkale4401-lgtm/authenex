@@ -61,17 +61,17 @@ export default function ScanHistory() {
             <div className="flex items-center gap-4">
                <div className={`
                  w-2 h-10 rounded-full
-                 ${scan.verdict === 'Likely AI' ? 'bg-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
-                   scan.verdict === 'Likely Human' ? 'bg-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 
+                 ${scan.verdict === 'AI' ? 'bg-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
+                   scan.verdict === 'HUMAN' ? 'bg-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 
                    'bg-amber-500/50'}
                `} />
                
                <div>
                  <p className="text-slate-200 font-medium">
-                   {scan.verdict}
+                   {scan.verdict === 'AI' ? 'Likely AI' : scan.verdict === 'HUMAN' ? 'Likely Human' : scan.verdict || 'Uncertain'}
                  </p>
                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                   {scan.createdAt?.seconds ? formatDistanceToNow(new Date(scan.createdAt.seconds * 1000)) + " " + t('scanHistory.ago') : t('scanHistory.justNow')}
+                   {scan.timestamp ? formatDistanceToNow(new Date(scan.timestamp)) + " " + t('scanHistory.ago') : t('scanHistory.justNow')}
                  </p>
                </div>
             </div>
