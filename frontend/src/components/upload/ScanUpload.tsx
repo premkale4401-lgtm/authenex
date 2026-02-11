@@ -146,6 +146,7 @@ export default function ScanUpload() {
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Analyzing {modality.toLowerCase()}...
+                <span className="text-[10px] opacity-70 block">The Analysis may take some Time</span>
               </>
             ) : (
               <>

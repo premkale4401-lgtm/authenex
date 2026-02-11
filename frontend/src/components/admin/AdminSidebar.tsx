@@ -10,15 +10,22 @@ import {
   FileText, 
   LogOut,
   Shield,
-  Activity
+  Activity,
+  User
 } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from "next-auth/react";
+import { useState, useEffect } from "react";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/admin') return pathname === '/admin';
@@ -155,14 +162,8 @@ export default function AdminSidebar() {
       {/* User Profile */}
       <div className="p-4 border-t border-slate-800 mt-auto">
         <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-800/50 border border-slate-700">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center overflow-hidden">
-             {session?.user?.image ? (
-                <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
-             ) : (
-                <span className="text-xs font-bold text-white">
-                  {session?.user?.name?.charAt(0) || "U"}
-                </span>
-             )}
+          <div className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center border border-sky-500/20">
+             <User className="w-4 h-4 text-sky-400" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">{session?.user?.name || "User"}</p>
@@ -171,6 +172,7 @@ export default function AdminSidebar() {
           <button 
             onClick={() => signOut({ callbackUrl: '/auth/signin' })}
             className="text-slate-400 hover:text-white transition-colors"
+            suppressHydrationWarning
           >
             <LogOut className="w-4 h-4" />
           </button>

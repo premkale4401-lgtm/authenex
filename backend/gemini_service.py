@@ -63,7 +63,7 @@ class GeminiAuthService:
             import base64
             
             ai = GeminiAuthService.get_ai()
-            model_name = 'gemini-3-flash-preview'  # EXACT from source
+            model_name = 'gemini-2.0-flash-exp'
             
             # Set system prompt based on modality (EXACT from source)
                 
@@ -90,20 +90,168 @@ class GeminiAuthService:
                     }
                 """,
                 "VIDEO": """
-                    ACT AS A FORENSIC VIDEO ANALYST.
-                    Analyze for: Deepfake signatures, temporal flickering, lip-sync errors, unnatural head-body alignment, and lighting inconsistencies.
-                    Return JSON with this EXACT structure:
+                    SYSTEM DIRECTIVE (CRITICAL – NON NEGOTIABLE):
+
+                    You are operating as a NATIONAL-LEVEL VIDEO FORENSICS ENGINE.
+
+                    This is NOT visual impression analysis.
+                    This is NOT realism judgment.
+                    This is EVIDENCE-DRIVEN AUTHENTICATION.
+
+                    You MUST apply court-grade forensic reasoning.
+
+                    ABSOLUTE RULES:
+
+                    1. NEVER classify AI unless MULTIPLE independent temporal + structural artifacts exist.
+                    2. Absence of artifacts LOWERS AI probability.
+                    3. Compression artifacts ≠ AI generation.
+                    4. Professional cinematography ≠ AI.
+                    5. Every score MUST reference DIRECT observable evidence.
+                    6. If resolution, frame rate, or quality is insufficient → verdict MUST lean UNCERTAIN.
+                    7. Overconfidence is penalized.
+                    8. Model guessing forbidden unless artifact patterns strongly align.
+                    9. If categories contradict → downgrade verdict.
+                    10. One strong indicator alone → UNCERTAIN.
+
+                    AI verdict requires:
+                    ≥2 STRONG structural indicators OR ≥4 MODERATE temporal indicators.
+
+                    You must internally perform:
+
+                    A. Frame-Level Artifact Extraction  
+                    B. Temporal Stability Analysis  
+                    C. Biological Motion Validation  
+                    D. Physics Consistency Verification  
+                    E. Cross-Layer Correlation  
+                    F. Audio-Visual Sync Analysis (Lip-Sync Focus)
+                    G. Final Sanity Test: “Would this survive forensic peer review?”
+
+                    If not → downgrade.
+
+                    ----------------------------------------------------
+
+                    ACT AS A FORENSIC VIDEO AUTHENTICITY ANALYZER.
+
+                    Analyze this VIDEO for:
+
+                    - Pure AI generation
+                    - Deepfake face replacement
+                    - Synthetic lip-sync (Voice-Lip Mismatch)
+                    - Human recorded footage
+
+                    Follow this EXACT pipeline:
+
+                    ============================
+                    LAYER 1 — TEMPORAL COHERENCE
+                    ============================
+
+                    Inspect across frames:
+
+                    - Identity persistence
+                    - Texture regeneration
+                    - Facial geometry drift
+                    - Flicker artifacts
+                    - Micro-jitter
+
+                    AI videos often re-synthesize regions frame-to-frame.
+
+                    ============================
+                    LAYER 2 — BIOLOGICAL DYNAMICS & LIP-SYNC
+                    ============================
+
+                    Examine:
+
+                    - Blink cadence (humans blink irregularly)
+                    - Micro-expressions
+                    - Lip-phoneme alignment (CRITICAL: Does the mouth shape match the sound exactly?)
+                    - Vowel formation consistency
+                    - Tongue positioning
+                    - Breath-to-speech synchronization
+                    - Gaze stability
+                    - Muscle activation realism
+
+                    Deepfakes commonly fail biological timing and precise lip-sync.
+
+                    ============================
+                    LAYER 3 — PHYSICAL REALISM
+                    ============================
+
+                    Validate:
+
+                    - Center of mass continuity
+                    - Gravity adherence
+                    - Inertial motion
+                    - Foot grounding
+                    - Object interaction
+
+                    AI frequently violates real-world physics.
+
+                    ============================
+                    LAYER 4 — SYNTHESIS ARTIFACTS
+                    ============================
+
+                    Detect:
+
+                    - Face boundary halos
+                    - Warping near cheeks/ears
+                    - Resolution islands
+                    - Edge crawling
+                    - Texture boiling
+
+                    These indicate neural regeneration.
+
+                    ============================
+                    LAYER 5 — SEMANTIC FLOW
+                    ============================
+
+                    Check:
+
+                    - Scene continuity
+                    - Action plausibility
+                    - Human spontaneity
+                    - Context logic
+
+                    ----------------------------------------------------
+
+                    CRITICAL CALIBRATION:
+
+                    - Low bitrate reduces certainty.
+                    - Motion blur ≠ AI.
+                    - Studio lighting ≠ AI.
+                    - Single anomaly ≠ AI.
+
+                    ONLY multi-layer structural failures justify AI.
+
+                    ----------------------------------------------------
+
+                    Perform weighted aggregation.
+
+                    Then perform CONTRADICTION CHECK:
+
+                    If any layer strongly supports HUMAN → downgrade AI.
+
+                    Before verdict ask internally:
+
+                    “Do at least two independent forensic dimensions confirm synthesis?”
+
+                    If no → UNCERTAIN.
+
+                    ----------------------------------------------------
+
+                    Return ONLY valid JSON (NO markdown) with this EXACT structure:
+
                     {
                         "verdict": "AI" | "HUMAN" | "UNCERTAIN",
-                        "confidence": <0-100>,
-                        "aiPercentage": <0-100>,
-                        "humanPercentage": <0-100>,
+                        "confidence": <0-100 float>,
+                        "aiPercentage": <0-100 float>,
+                        "humanPercentage": <0-100 float>,
                         "findings": ["<finding 1>", "<finding 2>"],
                         "categoryScores": {
                             "temporal_coherence": <0-100>,
                             "biological_dynamics": <0-100>,
                             "physical_realism": <0-100>,
-                            "synthesis_artifacts": <0-100>
+                            "synthesis_artifacts": <0-100>,
+                             "lip_sync_accuracy": <0-100>
                         },
                         "summary": "<short explanation>"
                     }
@@ -356,7 +504,7 @@ class GeminiAuthService:
             
             # First API call: Get news with web search
             response = ai.models.generate_content(
-                model='gemini-3-flash-preview',
+                model='gemini-2.0-flash-exp',
                 contents="Summarize 3 recent cases of deepfake fraud or AI-related crime specifically in Maharashtra, India from 2024-2025. Be concise.",
                 config=types.GenerateContentConfig(
                     tools=[types.Tool(google_search=types.GoogleSearch())]
@@ -381,7 +529,7 @@ class GeminiAuthService:
             
             # Second API call: Parse into structured JSON
             parser_response = ai.models.generate_content(
-                model='gemini-3-flash-preview',
+                model='gemini-2.0-flash-exp',
                 contents=f"Convert this news into JSON. Add a field 'imageSearchTerm' with 2 relevant keywords for an Unsplash image search based on the story. Content: {text}",
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",

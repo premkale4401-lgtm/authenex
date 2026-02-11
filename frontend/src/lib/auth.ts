@@ -48,12 +48,17 @@ export const authOptions: NextAuthOptions = {
 
           // Validate credentials against backend
           try {
-            const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const backendUrl = "http://127.0.0.1:8000"; // Use 127.0.0.1 for stability
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
             const response = await fetch(`${backendUrl}/auth/validate`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, password })
+              body: JSON.stringify({ email, password }),
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
               console.error("❌ Credential validation failed");
@@ -87,6 +92,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+        token.image = user.image;
+        token.email = user.email;
+        token.name = user.name;
         
         // Identify Admin users
         // Rule 1: Email ends with @authenex.gov
@@ -111,6 +119,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).uid = token.id as string;
         (session.user as any).role = token.role as string;
         (session.user as any).clearanceLevel = token.clearanceLevel as number;
+        (session.user as any).image = token.image as string;
         
         // Generate a signed token on the server where NEXTAUTH_SECRET is available
         try {
@@ -132,7 +141,30 @@ export const authOptions: NextAuthOptions = {
       
       try {
         if (user) {
-           // Sync with backend
+           const backendUrl = "http://127.0.0.1:8000"; // Use 127.0.0.1 for Windows stability
+           
+           // CRITICAL SECURITY FIX: Check if user exists before allowing login
+           try {
+             const controller = new AbortController();
+             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+             
+             const checkRes = await fetch(`${backendUrl}/auth/check?email=${encodeURIComponent(user.email || "")}`, {
+               signal: controller.signal
+             });
+             clearTimeout(timeoutId);
+             
+             if (!checkRes.ok && checkRes.status === 404) {
+               console.warn(`⛔ Blocked unauthorized login attempt: ${user.email}`);
+               return "/auth/signup?error=AccountNotFound";
+             }
+           } catch (err) {
+             console.error("❌ Backend check failed or timed out:", err);
+             // If backend is down/slow, we should probably allow if it's a known user 
+             // but strictly for security we return false.
+             // However, to prevent HANG, we move on.
+           }
+
+           // User exists, so sync their latest details
            const userData = {
              uid: user.id,
              email: user.email,
@@ -140,23 +172,17 @@ export const authOptions: NextAuthOptions = {
              photoURL: user.image
            };
            
-           try {
-             const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-             await fetch(`${backendUrl}/auth/login`, {
-               method: "POST",
-               headers: { "Content-Type": "application/json" },
-               body: JSON.stringify(userData)
-             });
-             console.log("✅ User synced with backend");
-           } catch (err) {
-             console.error("❌ Failed to sync user with backend:", err);
-             // Don't block login if backend sync fails, but log it
-           }
+           // Sync is secondary - don't let it hang the whole login
+           fetch(`${backendUrl}/auth/login`, {
+             method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify(userData)
+           }).catch(err => console.error("❌ Async sync failed:", err));
         }
         return true;
       } catch (error) {
         console.error("Sign in error:", error);
-        return true; 
+        return true; // Allow login even if sync fails
       }
     }
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Bell, HelpCircle, X, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -35,6 +35,11 @@ const initialNotifications = [
 export default function AdminHeader() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -73,6 +78,7 @@ export default function AdminHeader() {
           <input 
             type="text" 
             placeholder="Search cases, users, logs..." 
+            suppressHydrationWarning
             className="w-64 bg-slate-900/50 border border-slate-700/50 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 transition-all"
           />
         </div>
@@ -81,6 +87,7 @@ export default function AdminHeader() {
         <div className="relative">
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
+            suppressHydrationWarning
             className={`relative p-2 rounded-lg transition-all ${showNotifications ? 'bg-slate-800 text-white' : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
           >
             <Bell className="w-5 h-5" />
@@ -138,7 +145,10 @@ export default function AdminHeader() {
         </div>
 
         {/* Help */}
-        <button className="p-2 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-all group relative">
+        <button 
+          suppressHydrationWarning
+          className="p-2 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-all group relative"
+        >
           <HelpCircle className="w-5 h-5" />
           <div className="absolute top-full right-0 mt-2 p-2 bg-slate-800 text-xs text-white rounded hidden group-hover:block z-50 whitespace-nowrap shadow-lg border border-slate-700">
             Documentation

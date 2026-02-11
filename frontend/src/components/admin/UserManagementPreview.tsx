@@ -15,7 +15,10 @@ export default function UserManagementPreview() {
             <p className="text-sm text-slate-400">Role-based access control</p>
           </div>
         </div>
-        <button className="bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-400 hover:to-indigo-600 px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20">
+        <button 
+          suppressHydrationWarning
+          className="bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-400 hover:to-indigo-600 px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+        >
           <UserPlus className="w-4 h-4" />
           Add User
         </button>
@@ -65,7 +68,7 @@ export default function UserManagementPreview() {
           <p className="text-sm text-rose-400 font-medium">Privacy Protection Active</p>
           <p className="text-xs text-slate-400">Administrators cannot view user-uploaded content without explicit judicial authorization. All access attempts are logged.</p>
         </div>
-        <button className="text-xs text-rose-400 hover:text-rose-300 font-medium underline">View Policy</button>
+        <button suppressHydrationWarning className="text-xs text-rose-400 hover:text-rose-300 font-medium underline">View Policy</button>
       </div>
     </div>
   );

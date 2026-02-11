@@ -20,8 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
-import ParticleNetwork from "@/components/background/ParticleNetwork";
-import AuroraBackground from "@/components/background/AuroraBackground";
+// Removed performance-heavy background components
 
 // --- Components ---
 
@@ -62,6 +61,7 @@ const FloatingInput = ({
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        suppressHydrationWarning
         className="w-full pl-4 pr-12 pt-5 pb-1.5 bg-[#111827]/50 border border-slate-800 rounded-lg text-slate-100 placeholder-transparent focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 focus:bg-[#1a2234]/80 transition-all shadow-inner text-sm font-medium h-12"
         placeholder={label} 
         required
@@ -70,6 +70,7 @@ const FloatingInput = ({
         <button
           type="button"
           onClick={onTogglePassword}
+          suppressHydrationWarning
           className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-400 transition-colors z-10"
         >
           {type === "password" ? (
@@ -97,6 +98,12 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("ANALYST"); // Default role
   const [showPassword, setShowPassword] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Handle Hydration
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Optimized Mouse Tracking
   const mouseX = useMotionValue(0);
@@ -212,54 +219,23 @@ export default function SignIn() {
     }
   };
 
+  if (!isMounted) {
+    return <div className="min-h-screen bg-[#020617]" />; // Basic skeletal background
+  }
+
   return (
     <div className="min-h-screen w-full bg-[#020617] flex font-sans relative selection:bg-sky-500/30 overflow-x-hidden">
-      {/* Background */}
-      <div className="fixed inset-0 z-0 opacity-60 pointer-events-none">
-         <AuroraBackground />
-         <ParticleNetwork />
-      </div>
+      {/* Simplified Background */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] pointer-events-none" />
 
       {/* Grid Overlay */}
       <div className="fixed inset-0 bg-[linear-gradient(rgba(14,165,233,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(14,165,233,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_60%,transparent_100%)] pointer-events-none z-0 mix-blend-overlay" />
 
-      {/* Scanning Line Effect */}
-      <motion.div 
-        animate={{ top: ["0%", "100%", "0%"] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        className="fixed left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 to-transparent pointer-events-none z-0"
-      />
-
-      {/* Left Panel - Flex Layout for Screen Height */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-8 xl:p-12 min-h-screen border-r border-slate-800/50 backdrop-blur-sm bg-slate-900/20 perspective-1000">
-        
-        {/* Floating 3D Icons Layer */}
-        <motion.div style={{ x: moveX, y: moveY, rotateX, rotateY }} className="absolute inset-0 z-0 pointer-events-none">
-          {[Binary, Code2, Ghost, Fingerprint, Cpu, Network].map((Icon, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ 
-                opacity: [0.1, 0.3, 0.1],
-                scale: [1, 1.1, 1],
-                z: [0, 30, 0]
-              }}
-              transition={{ 
-                duration: 10 + i * 2, 
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.5
-              }}
-              className="absolute text-sky-400/10"
-              style={{
-                top: `${15 + (i * 15) % 80}%`,
-                left: `${10 + (i * 20) % 80}%`,
-              }}
-            >
-              <Icon size={100 + (i % 3) * 40} />
-            </motion.div>
-          ))}
-        </motion.div>
+        {/* Left Panel - Simplified */}
+        <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-8 xl:p-12 min-h-screen border-r border-slate-800/50 backdrop-blur-sm bg-slate-900/20 perspective-1000">
+          
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-sky-500/5 rounded-full blur-[100px] pointer-events-none animate-pulse-slow" />
 
         {/* Brand Content - Top Section */}
         <motion.div 
@@ -297,15 +273,12 @@ export default function SignIn() {
           </motion.div>
         </motion.div>
 
-        {/* Spacer for Flex Layout */}
-        <div className="flex-grow min-h-[2rem]" />
-
-        {/* Feature Cards - Middle Section */}
+        {/* Feature Cards - Shifted up */}
         <motion.div 
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 1, type: "spring" }}
-          className="relative z-10 grid grid-cols-2 gap-4 flex-shrink-0 mb-auto"
+          className="relative z-10 grid grid-cols-2 gap-4 flex-shrink-0 mt-12 mb-auto"
         >
           {[
             { icon: Scan, title: "Deepfake Detection", desc: "Pixel-level analysis engine", color: "text-sky-400", bg: "hover:bg-sky-500/10", border: "hover:border-sky-500/50" },
@@ -395,6 +368,7 @@ export default function SignIn() {
                whileTap={{ scale: 0.98 }}
                onClick={handleGoogleSignIn}
                disabled={isLoading}
+               suppressHydrationWarning
                className="w-full mb-6 flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-slate-800/80 border border-slate-700/50 hover:border-sky-500/50 text-slate-200 font-semibold text-sm transition-all group disabled:opacity-50 relative overflow-hidden shadow-lg hover:shadow-sky-500/10"
             >
                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
@@ -431,6 +405,7 @@ export default function SignIn() {
                       key={r}
                       type="button"
                       onClick={() => setRole(r)}
+                      suppressHydrationWarning
                       className={`text-xs font-semibold py-2 rounded-md transition-all duration-300 ${
                         role === r 
                           ? 'bg-sky-500/20 text-sky-400 shadow-sm ring-1 ring-sky-500/50' 
@@ -490,6 +465,7 @@ export default function SignIn() {
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isLoading}
+                suppressHydrationWarning
                 className="w-full flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-500 to-sky-500 bg-[length:200%_auto] animate-gradient hover:from-sky-400 hover:via-indigo-400 hover:to-sky-400 text-white font-bold text-base shadow-xl shadow-sky-500/20 hover:shadow-sky-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-4 relative overflow-hidden group ring-1 ring-white/20"
               >
                 {isLoading ? (

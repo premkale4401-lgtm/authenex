@@ -1,8 +1,23 @@
 "use client";
 
 import { Activity, TrendingUp, CheckCircle2, Users, Crown, Cpu } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function KPICards() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="glass-card rounded-xl p-5 h-32 bg-slate-900/20" />
+      ))}
+    </div>;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Card 1: Total Analyses */}

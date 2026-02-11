@@ -16,11 +16,11 @@ export default function AuditTrail() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors flex items-center gap-1">
+          <button suppressHydrationWarning className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors flex items-center gap-1">
             <Filter className="w-3.5 h-3.5" />
             Filter
           </button>
-          <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors flex items-center gap-1">
+          <button suppressHydrationWarning className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors flex items-center gap-1">
             <Download className="w-3.5 h-3.5" />
             Export
           </button>

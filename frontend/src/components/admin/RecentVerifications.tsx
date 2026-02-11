@@ -10,7 +10,10 @@ export default function RecentVerifications() {
           <h3 className="text-lg font-semibold text-white">Recent Verifications</h3>
           <p className="text-sm text-slate-400">Latest forensic analyses</p>
         </div>
-        <button className="text-sky-400 hover:text-sky-300 text-sm font-medium flex items-center gap-1 transition-colors">
+        <button 
+          suppressHydrationWarning
+          className="text-sky-400 hover:text-sky-300 text-sm font-medium flex items-center gap-1 transition-colors"
+        >
           View All
           <ArrowRight className="w-4 h-4" />
         </button>

@@ -13,9 +13,9 @@ export default function AdminCharts() {
             <p className="text-sm text-slate-400">Real-time verification requests</p>
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-400 text-xs font-medium">24H</button>
-            <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors">7D</button>
-            <button className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors">30D</button>
+            <button suppressHydrationWarning className="px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-400 text-xs font-medium">24H</button>
+            <button suppressHydrationWarning className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors">7D</button>
+            <button suppressHydrationWarning className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium hover:text-white transition-colors">30D</button>
           </div>
         </div>
         

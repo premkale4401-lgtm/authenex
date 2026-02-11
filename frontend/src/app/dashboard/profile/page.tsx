@@ -60,10 +60,15 @@ const achievements = [
 export default function ProfilePage() {
   const { t } = useLanguage();
   const { data: session } = useSession();
+  const [isMounted, setIsMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [avatarHover, setAvatarHover] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const [profileData, setProfileData] = useState({
     name: session?.user?.name || "Alexandra Chen",
@@ -100,8 +105,12 @@ export default function ProfilePage() {
     }
   };
 
+  if (!isMounted) {
+    return <div className="min-h-screen bg-[#020617]" />;
+  }
+
   return (
-    <div className="min-h-screen pb-20 lg:pb-0">
+    <div className="min-h-screen pb-20 lg:pb-0" suppressHydrationWarning>
       {/* Hero Section with Cover Image */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -129,13 +138,16 @@ export default function ProfilePage() {
             onMouseEnter={() => setAvatarHover(true)}
             onMouseLeave={() => setAvatarHover(false)}
           >
-            <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-[#020617] shadow-2xl relative bg-slate-800">
-              <Image
-                src={session?.user?.image || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80"}
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
+            <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-[#020617] shadow-2xl relative bg-slate-800 flex items-center justify-center">
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-12 h-12 text-slate-400" />
+              )}
               <AnimatePresence>
                 {avatarHover && (
                   <motion.div
@@ -341,11 +353,12 @@ export default function ProfilePage() {
                       <input
                         type="email"
                         value={profileData.email}
+                        suppressHydrationWarning
                         onChange={(e) => setProfileData({...profileData, email: e.target.value})}
                         className="bg-transparent text-slate-300 focus:outline-none border-b border-slate-600 focus:border-sky-500 w-full"
                       />
                     ) : (
-                      <p className="text-slate-300 text-sm">{profileData.email}</p>
+                      <p className="text-slate-300 text-sm" suppressHydrationWarning>{profileData.email}</p>
                     )}
                   </div>
                 </div>

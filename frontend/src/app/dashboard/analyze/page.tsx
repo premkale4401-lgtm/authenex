@@ -400,26 +400,28 @@ export default function AnalyzePage() {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-6"
           >
-            <div
-              {...getRootProps()}
-              className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer ${
-                isDragActive
-                  ? "border-sky-500 bg-sky-500/10"
-                  : "border-slate-700 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/30"
-              }`}
-            >
-              <input {...getInputProps()} />
-              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800 flex items-center justify-center">
-                <Upload className={`w-10 h-10 ${isDragActive ? "text-sky-400" : "text-slate-400"}`} />
+            {files.length === 0 && (
+              <div
+                {...getRootProps()}
+                className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer ${
+                  isDragActive
+                    ? "border-sky-500 bg-sky-500/10"
+                    : "border-slate-700 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/30"
+                }`}
+              >
+                <input {...getInputProps()} />
+                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-slate-800 flex items-center justify-center">
+                  <Upload className={`w-10 h-10 ${isDragActive ? "text-sky-400" : "text-slate-400"}`} />
+                </div>
+                <p className="text-lg font-medium text-white mb-2">
+                  {isDragActive ? t('analyze.dropzone.dragActive') : t('analyze.dropzone.dragDrop')}
+                </p>
+                <p className="text-sm text-slate-400 mb-4">{t('analyze.dropzone.browse')}</p>
+                <button suppressHydrationWarning className="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors">
+                  {t('analyze.dropzone.selectFiles')}
+                </button>
               </div>
-              <p className="text-lg font-medium text-white mb-2">
-                {isDragActive ? t('analyze.dropzone.dragActive') : t('analyze.dropzone.dragDrop')}
-              </p>
-              <p className="text-sm text-slate-400 mb-4">{t('analyze.dropzone.browse')}</p>
-              <button suppressHydrationWarning className="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors">
-                {t('analyze.dropzone.selectFiles')}
-              </button>
-            </div>
+            )}
 
             {/* File List */}
             {files.length > 0 && (
@@ -505,7 +507,10 @@ export default function AnalyzePage() {
              ) : (
                <div className="flex flex-col items-center gap-4 text-slate-600">
                  <FileSearch className="w-16 h-16" />
-                 <p>Analyzing Content...</p>
+                 <div className="text-center">
+                   <p className="text-lg font-medium">Analyzing Content...</p>
+                   <p className="text-sm text-slate-500 mt-1 italic">The Analysis may take some Time</p>
+                 </div>
                </div>
              )}
            </div>
@@ -522,14 +527,17 @@ export default function AnalyzePage() {
  
            {/* Scanning Text */}
            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-             <div className="flex items-center gap-3 px-4 py-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg">
-               <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-               <span className="text-cyan-400 font-mono text-sm">
-                 {currentStep === 1 ? "INITIALIZING..." : 
-                  currentStep === 2 ? "SCANNING LAYERS..." : 
-                  "ANALYZING FEATURES..."}
-               </span>
-             </div>
+               <div className="flex items-center gap-3 px-4 py-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg">
+                 <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+                 <span className="text-cyan-400 font-mono text-sm leading-none">
+                   {currentStep === 1 ? "INITIALIZING..." : 
+                    currentStep === 2 ? "SCANNING LAYERS..." : 
+                    "ANALYZING FEATURES..."}
+                 </span>
+                 <span className="text-slate-500 text-[10px] ml-2 animate-pulse uppercase tracking-widest hidden md:inline leading-none">
+                   | Processing forensic evidence... may take some time
+                 </span>
+               </div>
              <div className="px-4 py-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg">
                <span className="text-slate-400 font-mono text-sm">
                   ID: {mounted ? scanId : "LOADING..."}

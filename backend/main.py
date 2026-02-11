@@ -599,6 +599,39 @@ async def validate_credentials(
         "role": user.role
     }
 
+@app.get("/auth/check")
+async def check_user_exists(email: str, db: Session = Depends(get_db)):
+    """
+    Check if a user exists by email.
+    Used by frontend 'signIn' callback to block unauthorized Google logins.
+    """
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"status": "exists", "uid": user.uid, "role": user.role}
+
+@app.post("/auth/login")
+async def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
+    """
+    Sync user details on login. 
+    Updates display name and photo from Google/OAuth if they changed.
+    """
+    user = db.query(User).filter(User.email == user_data.email).first()
+    if not user:
+         # This case should technically be handled by auth/check already, 
+         # but for robustness we handle it.
+         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update details
+    if user_data.displayName:
+        user.display_name = user_data.displayName
+    if user_data.photoURL:
+        user.photo_url = user_data.photoURL
+        
+    db.commit()
+    return {"status": "success", "message": "User synced"}
+
+
 @app.get("/history/{uid}")
 async def get_history(
     uid: str,

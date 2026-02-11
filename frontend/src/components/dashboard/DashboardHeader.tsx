@@ -1,7 +1,7 @@
 // frontend/src/components/dashboard/DashboardHeader.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Menu,
@@ -32,9 +32,14 @@ export default function DashboardHeader({
 }) {
   const { t } = useLanguage();
   const { data: session } = useSession();
+  const [isMounted, setIsMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   const [notifications, setNotifications] = useState([
     { id: 1, title: "Analysis Complete", message: "Image verification finished with 98% authenticity", time: "2 min ago", read: false, type: "success" },
     { id: 2, title: "New Case Assigned", message: "Case #2045 requires your review", time: "1 hour ago", read: false, type: "info" },
@@ -50,6 +55,10 @@ export default function DashboardHeader({
   const markAllRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
+
+  if (!isMounted) {
+    return <header className="h-20 bg-slate-900 border-b border-white/5 px-8 sticky top-0 z-30 transition-colors" />;
+  }
 
   return (
     <header className="h-20 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30 shadow-sm dark:shadow-lg dark:shadow-black/20 transition-colors">
@@ -191,17 +200,9 @@ export default function DashboardHeader({
               <p className="text-sm font-medium text-slate-900 dark:text-white">{session?.user?.name || "Investigator"}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Forensic Analyst</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 p-0.5 cursor-pointer hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 p-0.5 cursor-pointer hover:scale-105 transition-transform flex items-center justify-center">
               <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
-                {session?.user?.image ? (
-                  <img 
-                    src={session.user.image} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover" 
-                  />
-                ) : (
-                  <User className="w-5 h-5 text-slate-300" />
-                )}
+                <User className="w-5 h-5 text-slate-300" />
               </div>
             </div>
           </button>
