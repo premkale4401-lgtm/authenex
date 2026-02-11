@@ -8,6 +8,8 @@ export const sampleAnalysisResult: AnalysisResult = {
   generatedAt: new Date().toISOString(),
   contentType: 'image',
   verdict: 'ai-generated',
+  aiPercentage: 87,
+  humanPercentage: 13,
   confidence: {
     score: 87,
     breakdown: {
@@ -152,6 +154,8 @@ export const sampleAuthenticResult: AnalysisResult = {
   generatedAt: new Date().toISOString(),
   contentType: 'image',
   verdict: 'authentic',
+  aiPercentage: 8,
+  humanPercentage: 92,
   confidence: {
     score: 92,
     breakdown: {

@@ -10,6 +10,7 @@ export interface AnalysisResult {
   contentType: ContentType;
   verdict: Verdict;
   aiPercentage: number;
+  humanPercentage: number;
   confidence: {
     score: number;
     breakdown?: Record<string, number>;
