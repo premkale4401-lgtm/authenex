@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   description: "Digital forensics dashboard for content verification and analysis",
 };
 
+// Force dynamic rendering - prevents static generation during build
+// Required because we use getServerSession which needs runtime context
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({
   children,
 }: {

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generatePDFBuffer } from '@/lib/report/pdf/generate';
 import { AnalysisResult, ReportConfig } from '@/types/report';
 
+// Force dynamic rendering - prevents static generation during build
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { result, config } = await request.json() as { 
