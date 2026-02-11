@@ -167,39 +167,7 @@ export const translations = {
       justNow: "Just now",
       ago: "ago"
     },
-    profile: {
-      tabs: {
-        overview: "Overview",
-        activity: "Activity",
-        achievements: "Achievements"
-      },
-      edit: "Edit Profile",
-      save: "Save Changes",
-      cancel: "Cancel",
-      role: "Role",
-      location: "Location",
-      credits: {
-        available: "Available Credits",
-        refill: "Refill Date",
-        add: "Add Credits",
-        usage: "Monthly Usage"
-      },
-      about: "About",
-      email: "Email",
-      website: "Website",
-      memberSince: "Member Since",
-      lastActive: "Last Active",
-      plan: {
-        current: "Current Plan",
-        renews: "Renews on",
-        upgrade: "Upgrade Plan"
-      },
-      delete: {
-        title: "Delete Account?",
-        desc: "This action cannot be undone. All your data will be permanently deleted.",
-        confirm: "Delete"
-      }
-    },
+
     settings: {
       title: "Settings",
       subtitle: "Manage your account preferences and security.",
@@ -983,39 +951,7 @@ export const translations = {
       justNow: "अभी",
       ago: "पहले"
     },
-    profile: {
-      tabs: {
-        overview: "अवलोकन",
-        activity: "गतिविधि",
-        achievements: "उपलब्धियां"
-      },
-      edit: "प्रोफ़ाइल संपादित करें",
-      save: "परिवर्तन सहेजें",
-      cancel: "रद्द करें",
-      role: "भूमिका",
-      location: "स्थान",
-      credits: {
-        available: "उपलब्ध क्रेडिट",
-        refill: "रीफिल तिथि",
-        add: "क्रेडिट जोड़ें",
-        usage: "मासिक उपयोग"
-      },
-      about: "के बारे में",
-      email: "ईमेल",
-      website: "वेबसाइट",
-      memberSince: "सदस्यता तिथि",
-      lastActive: "अंतिम सक्रिय",
-      plan: {
-        current: "वर्तमान योजना",
-        renews: "नवीनीकरण",
-        upgrade: "योजना अपग्रेड करें"
-      },
-      delete: {
-        title: "खाता हटाएं?",
-        desc: "यह कार्रवाई पूर्ववत नहीं की जा सकती। आपका सारा डेटा स्थायी रूप से हटा दिया जाएगा।",
-        confirm: "हटाएं"
-      }
-    },
+
     settings: {
       title: "सेटिंग्स",
       subtitle: "अपनी खाता प्राथमिकताएं और सुरक्षा प्रबंधित करें।",
