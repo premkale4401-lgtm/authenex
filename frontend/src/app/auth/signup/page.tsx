@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -114,7 +114,8 @@ const FloatingInput = ({
   );
 };
 
-export default function SignUpPage() {
+// Separate component that uses useSearchParams
+function SignUpContent() {
   const { t } = useLanguage();
   const router = useRouter();
   
@@ -580,5 +581,18 @@ export default function SignUpPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
+      </div>
+    }>
+      <SignUpContent />
+    </Suspense>
   );
 }
