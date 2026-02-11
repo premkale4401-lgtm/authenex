@@ -122,6 +122,15 @@ class UserLogin(BaseModel):
     displayName: Optional[str] = None
     photoURL: Optional[str] = None
 
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    displayName: Optional[str] = None
+
+class CredentialsValidate(BaseModel):
+    email: str
+    password: str
+
 class ChatMessage(BaseModel):
     role: str
     text: str
@@ -254,6 +263,74 @@ async def update_user_profile(
         
     db.commit()
     return {"status": "success", "message": "Profile updated"}
+
+
+@app.get("/api/user/stats")
+async def get_user_stats(
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    """
+    Get user statistics for dashboard
+    Returns real user data instead of demo data
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    
+    uid = user["sub"]
+    
+    # Total scans
+    total_scans = db.query(func.count(Scan.id)).filter(Scan.uid == uid).scalar() or 0
+    
+    # Today's scans
+    today = datetime.utcnow().date()
+    today_scans = db.query(func.count(Scan.id)).filter(
+        Scan.uid == uid,
+        func.date(Scan.created_at) == today
+    ).scalar() or 0
+    
+    # AI detected count
+    ai_detected = db.query(func.count(Scan.id)).filter(
+        Scan.uid == uid,
+        Scan.verdict == "AI"
+    ).scalar() or 0
+    
+    # Human detected count
+    human_detected = db.query(func.count(Scan.id)).filter(
+        Scan.uid == uid,
+        Scan.verdict == "HUMAN"
+    ).scalar() or 0
+    
+    # Average confidence
+    avg_confidence = db.query(func.avg(Scan.confidence)).filter(
+        Scan.uid == uid
+    ).scalar() or 0.0
+    
+    # Recent activity (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_scans = db.query(Scan).filter(
+        Scan.uid == uid,
+        Scan.created_at >= thirty_days_ago
+    ).order_by(Scan.created_at.desc()).limit(10).all()
+    
+    return {
+        "totalScans": total_scans,
+        "todayScans": today_scans,
+        "aiDetected": ai_detected,
+        "humanDetected": human_detected,
+        "uncertainDetected": total_scans - ai_detected - human_detected,
+        "averageConfidence": round(float(avg_confidence), 2),
+        "recentActivity": [
+            {
+                "id": scan.id,
+                "filename": scan.filename,
+                "verdict": scan.verdict,
+                "confidence": scan.confidence,
+                "createdAt": scan.created_at.isoformat()
+            }
+            for scan in recent_scans
+        ]
+    }
 
 # ==========================================
 #  ADMIN SYSTEM SETTINGS (RBAC Protected)
@@ -423,6 +500,104 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     db.commit()
     
     return {"status": "success", "message": "User logged in"}
+
+
+@app.post("/auth/register")
+async def register_user(
+    user_data: UserRegister,
+    db: Session = Depends(get_db)
+):
+    """
+    Register a new user with email and password
+    """
+    from password_utils import hash_password
+    import uuid
+    
+    # Validate email format
+    email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    if not re.match(email_regex, user_data.email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    
+    # Check if email already exists
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Email already registered")
+    
+    # Validate password strength
+    if len(user_data.password) < 8:
+        raise HTTPException(
+            status_code=400, 
+            detail="Password must be at least 8 characters long"
+        )
+    
+    try:
+        # Create new user
+        new_user = User(
+            uid=f"user-{uuid.uuid4()}",
+            email=user_data.email,
+            display_name=user_data.displayName or user_data.email.split('@')[0],
+            password_hash=hash_password(user_data.password),
+            role="USER"
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Log registration
+        audit = AuditLog(
+            uid=new_user.uid,
+            action="USER_REGISTERED",
+            ip_address="unknown",
+            details={"email": user_data.email}
+        )
+        db.add(audit)
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": "User registered successfully",
+            "user": {
+                "uid": new_user.uid,
+                "email": new_user.email,
+                "displayName": new_user.display_name
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Registration error: {e}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+
+@app.post("/auth/validate")
+async def validate_credentials(
+    credentials: CredentialsValidate,
+    db: Session = Depends(get_db)
+):
+    """
+    Validate user credentials for login
+    Returns user data if valid, raises 401 if invalid
+    """
+    from password_utils import verify_password
+    
+    # Find user by email
+    user = db.query(User).filter(User.email == credentials.email).first()
+    
+    if not user or not user.password_hash:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Verify password
+    if not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Return user data for NextAuth
+    return {
+        "id": user.uid,
+        "name": user.display_name,
+        "email": user.email,
+        "image": user.photo_url or f"https://ui-avatars.com/api/?name={user.display_name}&background=random&color=fff",
+        "role": user.role
+    }
 
 @app.get("/history/{uid}")
 async def get_history(

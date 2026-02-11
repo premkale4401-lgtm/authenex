@@ -32,9 +32,14 @@ interface FloatingInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   icon: LucideIcon;
+  showPasswordToggle?: boolean;
+  onTogglePassword?: () => void;
 }
 
-const FloatingInput = ({ id, label, value, onChange, type = "text", icon: Icon }: FloatingInputProps) => {
+const FloatingInput = ({ 
+  id, label, value, onChange, type = "text", icon: Icon,
+  showPasswordToggle, onTogglePassword 
+}: FloatingInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value.length > 0;
 
@@ -57,10 +62,23 @@ const FloatingInput = ({ id, label, value, onChange, type = "text", icon: Icon }
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className="w-full pl-4 pr-4 pt-5 pb-1.5 bg-[#111827]/50 border border-slate-800 rounded-lg text-slate-100 placeholder-transparent focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 focus:bg-[#1a2234]/80 transition-all shadow-inner text-sm font-medium h-12"
+        className="w-full pl-4 pr-12 pt-5 pb-1.5 bg-[#111827]/50 border border-slate-800 rounded-lg text-slate-100 placeholder-transparent focus:outline-none focus:border-sky-500/50 focus:ring-1 focus:ring-sky-500/50 focus:bg-[#1a2234]/80 transition-all shadow-inner text-sm font-medium h-12"
         placeholder={label} 
         required
       />
+      {showPasswordToggle && onTogglePassword && (
+        <button
+          type="button"
+          onClick={onTogglePassword}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-400 transition-colors z-10"
+        >
+          {type === "password" ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          )}
+        </button>
+      )}
       <div className="absolute inset-0 rounded-lg ring-1 ring-white/5 pointer-events-none group-hover:ring-white/10 transition-all" />
       
       {/* Hover visual cue */}
@@ -78,6 +96,7 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("ANALYST"); // Default role
+  const [showPassword, setShowPassword] = useState(false);
   
   // Optimized Mouse Tracking
   const mouseX = useMotionValue(0);
@@ -161,7 +180,7 @@ export default function SignIn() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        setError("Invalid email or password. If you don't have an account, please create one first.");
         setIsLoading(false);
       } else {
          if (role === "ADMIN") {
@@ -440,10 +459,12 @@ export default function SignIn() {
                    <FloatingInput
                     id="password"
                     label="Password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     icon={Lock}
+                    showPasswordToggle
+                    onTogglePassword={() => setShowPassword(!showPassword)}
                   />
                 </div>
               </motion.div>

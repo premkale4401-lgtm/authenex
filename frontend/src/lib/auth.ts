@@ -23,18 +23,16 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     
-    // Test Credentials (for demo without Google)
+    // Credentials Provider with Backend Validation
     CredentialsProvider({
       id: "credentials",
-      name: "Test Account",
+      name: "Email & Password",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         try {
-          // Demo login - accepts any email for testing
-          const selectedRole = (credentials as any)?.role || "ANALYST";
           const email = credentials?.email;
           const password = credentials?.password;
           
@@ -48,36 +46,35 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          // Demo mode - accept any valid email format
-          // In production, you would validate against a database
-          let userRole = selectedRole;
-          let userId = `user-${Date.now()}`;
-          let name = email.split('@')[0];
-          
-          // Special handling for known demo accounts
-          if (email === "test@authenex.com" || email === "admin@authenex.gov") {
-            if (selectedRole === "ADMIN") {
-              userRole = "ADMIN";
-              userId = "admin-001";
-              name = "System Admin";
-            } else {
-              userRole = "ANALYST";
-              userId = "analyst-001";
-              name = "Demo Analyst";
-            }
-          } else {
-            // For new accounts, capitalize first letter
-            name = name.charAt(0).toUpperCase() + name.slice(1);
-          }
+          // Validate credentials against backend
+          try {
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const response = await fetch(`${backendUrl}/auth/validate`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password })
+            });
 
-          return {
-            id: userId,
-            name: name,
-            email: email,
-            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`,
-            role: userRole,
-            clearanceLevel: userRole === "ADMIN" ? 5 : 3,
-          };
+            if (!response.ok) {
+              console.error("❌ Credential validation failed");
+              return null;
+            }
+
+            const userData = await response.json();
+            console.log("✅ Credentials validated successfully");
+            
+            return {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              image: userData.image,
+              role: userData.role,
+              clearanceLevel: userData.role === "ADMIN" ? 5 : (userData.role === "ANALYST" ? 3 : 1),
+            };
+          } catch (err) {
+            console.error("❌ Backend validation error:", err);
+            return null;
+          }
         } catch (error) {
           console.error("Authorization error:", error);
           return null;

@@ -226,11 +226,11 @@ export async function generatePDFBuffer(
   
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text('CONFIDENCE', leftX + colWidth / 2, currentY + 30, { align: 'center' });
+  doc.text('AI PROBABILITY', leftX + colWidth / 2, currentY + 30, { align: 'center' });
   
   doc.setFontSize(20);
   doc.setTextColor(6, 182, 212);
-  doc.text(`${result.confidence.score}%`, leftX + colWidth / 2, currentY + 42, { align: 'center' });
+  doc.text(`${result.aiPercentage}%`, leftX + colWidth / 2, currentY + 42, { align: 'center' });
   
   currentY += 58;
   
@@ -297,7 +297,7 @@ export async function generatePDFBuffer(
   const metadata = [
     `Scan Date: ${new Date(result.generatedAt).toLocaleDateString()}`,
     `Analysis Method: Deep Learning + Forensic`,
-    `Confidence Level: ${result.confidence.score >= 90 ? 'Very High' : result.confidence.score >= 70 ? 'High' : 'Moderate'}`,
+    `AI Probability: ${result.aiPercentage}%`,
     `Processing Time: ${result.analysis.duration}`
   ];
   

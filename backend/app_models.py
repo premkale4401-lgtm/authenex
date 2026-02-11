@@ -13,6 +13,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     display_name = Column(String)
     photo_url = Column(String)
+    password_hash = Column(String)  # For credentials-based auth
     role = Column(String, default="USER")  # USER, ADMIN, ANALYST
     created_at = Column(DateTime, default=datetime.utcnow)
     

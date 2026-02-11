@@ -199,17 +199,34 @@ export default function SignUpPage() {
     setError("");
 
     try {
-      // For demo purposes, we'll use the credentials provider
-      // In production, you'd want to create an actual user account
+      // 1. Register user with backend
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const registerResponse = await fetch(`${backendUrl}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          displayName: name
+        })
+      });
+
+      if (!registerResponse.ok) {
+        const errorData = await registerResponse.json();
+        throw new Error(errorData.detail || "Registration failed");
+      }
+
+      // 2. If successful, sign in specifically to get the session
       const result = await signIn("credentials", {
         email,
         password,
-        role,
+        role: "USER", // Default to USER role on signup
         redirect: false,
       });
 
       if (result?.error) {
-        setError("Sign up failed. Please try again.");
+        setError("Account created, but auto-login failed. Please sign in manually.");
+        setTimeout(() => router.push("/auth/signin"), 2000);
       } else if (result?.ok) {
         // Redirect based on role
         if (role === "ADMIN") {
@@ -218,8 +235,9 @@ export default function SignUpPage() {
           window.location.href = "/dashboard";
         }
       }
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+    } catch (err: any) {
+      console.error("Signup error:", err);
+      setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

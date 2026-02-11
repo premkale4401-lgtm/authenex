@@ -44,7 +44,7 @@ export class ReportContentBuilder {
           type: 'verdict',
           label: 'Determination',
           value: verdictText,
-          confidence: this.result.confidence.score,
+          confidence: this.result.aiPercentage,
           riskLevel: this.result.riskLevel
         },
         {
@@ -54,7 +54,7 @@ export class ReportContentBuilder {
         {
           type: 'metrics',
           items: [
-            { label: 'Confidence Score', value: `${this.result.confidence.score}%` },
+            { label: 'AI Probability', value: `${this.result.aiPercentage}%` },
             { label: 'Analysis Duration', value: this.result.analysis.duration },
             { label: 'Signals Detected', value: this.result.analysis.signalsDetected.toString() }
           ]

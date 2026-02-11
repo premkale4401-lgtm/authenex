@@ -244,6 +244,7 @@ export default function AnalysisResultPage() {
           generatedAt: analysisResult.timestamp,
           contentType: analysisResult.contentType as any,
           verdict: analysisResult.overallScore.aiProbability > 50 ? 'ai-generated' : 'authentic',
+          aiPercentage: analysisResult.overallScore.aiProbability,
           confidence: {
             score: analysisResult.overallScore.confidence
           },

@@ -31,7 +31,7 @@ export default async function AdminLayout({
   // But I will add a comment about role enforcement.
   
   if ((session.user as any).role !== "ADMIN" && (session.user as any).role !== "ANALYST") {
-       // redirect("/dashboard"); // Uncomment to restrict strictly
+       redirect("/dashboard");
   }
 
   return (
