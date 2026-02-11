@@ -12,7 +12,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "Authenex | AI-Powered Digital Forensics",
   description: "Government-grade digital content verification platform",
+  manifest: "/manifest.json",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
+  themeColor: "#0f172a",
 };
+
 
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 

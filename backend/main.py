@@ -622,55 +622,51 @@ async def root():
 @app.post("/auth/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     """
-    Create or update user on login
+    Create or update user on login.
+    Uses EMAIL as the source of truth for user identity.
+    Generates consistent UID based on email hash.
     """
-    print(f"Login request: {user.uid}")
+    import hashlib
     
-    # Check if user exists
-    # Check if user exists by UID
-    db_user = db.query(User).filter(User.uid == user.uid).first()
+    print(f"Login request for email: {user.email}")
     
-    if not db_user:
-        # Check if user exists by Email (to prevent IntegrityError)
-        existing_email_user = db.query(User).filter(User.email == user.email).first()
-        if existing_email_user:
-            # Case: User exists with same email but different UID (e.g., deleted and recreated or different auth provider)
-            # Update the existing user's UID to match current request
-            print(f"⚠️  User found by email {user.email} but mismatching UID. Updating UID.")
-            existing_email_user.uid = user.uid
-            existing_email_user.display_name = user.displayName
-            existing_email_user.photo_url = user.photoURL
-            db.commit()
-            db.refresh(existing_email_user)
-            db_user = existing_email_user
-        else:
-            # Create new user
-            try:
-                db_user = User(
-                    uid=user.uid,
-                    email=user.email,
-                    display_name=user.displayName,
-                    photo_url=user.photoURL
-                )
-                db.add(db_user)
-                db.commit()
-                db.refresh(db_user)
-                print(f"✅ Created new user: {user.email}")
-            except Exception as e:
-                db.rollback()
-                print(f"❌ Failed to create user: {e}")
-                raise HTTPException(status_code=500, detail="User creation failed")
-    else:
-        # Update existing user
-        db_user.email = user.email
+    # STEP 1: Find user by EMAIL (source of truth)
+    db_user = db.query(User).filter(User.email == user.email).first()
+    
+    if db_user:
+        # User exists - keep their existing UID, just update profile
+        print(f"✅ Existing user found: {user.email} with UID: {db_user.uid}")
         db_user.display_name = user.displayName
         db_user.photo_url = user.photoURL
         db.commit()
-        print(f"✅ Updated user: {user.email}")
+        db.refresh(db_user)
+    else:
+        # STEP 2: New user - generate consistent UID from email
+        # Use SHA256 hash of email to create deterministic UID
+        email_hash = hashlib.sha256(user.email.lower().encode()).hexdigest()[:16]
+        consistent_uid = f"user-{email_hash}"
+        
+        print(f"🆕 Creating new user: {user.email} with consistent UID: {consistent_uid}")
+        
+        try:
+            db_user = User(
+                uid=consistent_uid,  # Consistent UID based on email hash
+                email=user.email,
+                display_name=user.displayName,
+                photo_url=user.photoURL
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+            print(f"✅ Created new user: {user.email}")
+        except Exception as e:
+            db.rollback()
+            print(f"❌ Failed to create user: {e}")
+            raise HTTPException(status_code=500, detail="User creation failed")
     
     # Create audit log
     audit = AuditLog(
-        uid=user.uid,
+        uid=db_user.uid,  # Use the DB user's UID (consistent)
         action="USER_LOGIN",
         ip_address="unknown",  # TODO: Extract from request
         details={"email": user.email}
@@ -678,7 +674,15 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     db.add(audit)
     db.commit()
     
-    return {"status": "success", "message": "User logged in"}
+    # STEP 3: Return the consistent UID to frontend
+    return {
+        "status": "success",
+        "uid": db_user.uid,  # Return the consistent UID
+        "email": db_user.email,
+        "displayName": db_user.display_name,
+        "photoURL": db_user.photo_url
+    }
+
 
 
 @app.post("/auth/register")
@@ -1485,7 +1489,7 @@ async def analyze_asset(
 @app.get("/api/history/{uid}")
 async def get_user_history(
     uid: str,
-    limit: int = 50,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_active_user)
 ):

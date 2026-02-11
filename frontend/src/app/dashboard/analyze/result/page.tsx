@@ -533,7 +533,7 @@ export default function AnalysisResultPage() {
           {/* Right Column - Tabs & Details */}
           <div className="lg:col-span-8 space-y-6">
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-slate-800 pb-1">
+            <div className="flex gap-2 border-b border-slate-800 pb-1 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -705,14 +705,25 @@ export default function AnalysisResultPage() {
                           }`} />
                           <div className="flex-1">
                             <h4 className="text-slate-200 font-medium mb-1">{layer.name}</h4>
-                            <ul className="space-y-1">
-                              {(layer.details || []).map((detail: string, detailIdx: number) => (
-                                <li key={detailIdx} className="text-slate-400 text-sm flex items-start gap-2">
-                                  <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
-                                  {detail}
-                                </li>
-                              ))}
-                            </ul>
+                            {layer.details && (
+                              <ul className="space-y-1">
+                                {(() => {
+                                  // Handle details as string (split by newlines) or array
+                                  const detailsArray = typeof layer.details === 'string' 
+                                    ? layer.details.split('\n').filter((d: string) => d.trim())
+                                    : Array.isArray(layer.details) 
+                                    ? layer.details 
+                                    : [layer.details];
+                                  
+                                  return detailsArray.map((detail: string, detailIdx: number) => (
+                                    <li key={detailIdx} className="text-slate-400 text-sm flex items-start gap-2">
+                                      <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
+                                      {detail}
+                                    </li>
+                                  ));
+                                })()}
+                              </ul>
+                            )}
                           </div>
                           <div className={`px-3 py-1 rounded-lg text-sm font-bold border ${
                             layer.status === 'critical' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :

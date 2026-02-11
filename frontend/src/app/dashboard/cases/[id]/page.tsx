@@ -436,17 +436,28 @@ export default function CaseDetailPage() {
                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
                              layer.status === 'critical' ? 'bg-rose-500' : 'bg-emerald-500'
                            }`} />
-                           <div className="flex-1">
-                             <h4 className="text-slate-200 font-medium mb-1">{layer.name}</h4>
-                             <ul className="space-y-1">
-                               {(layer.details || []).map((detail: string, detailIdx: number) => (
-                                 <li key={detailIdx} className="text-slate-400 text-sm flex items-start gap-2">
-                                   <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
-                                   {detail}
-                                 </li>
-                               ))}
-                             </ul>
-                           </div>
+                            <div className="flex-1">
+                              <h4 className="text-slate-200 font-medium mb-1">{layer.name}</h4>
+                              {layer.details && (
+                                <ul className="space-y-1">
+                                  {(() => {
+                                    // Handle details as string (split by newlines) or array
+                                    const detailsArray = typeof layer.details === 'string' 
+                                      ? layer.details.split('\n').filter((d: string) => d.trim())
+                                      : Array.isArray(layer.details) 
+                                      ? layer.details 
+                                      : [layer.details];
+                                    
+                                    return detailsArray.map((detail: string, detailIdx: number) => (
+                                      <li key={detailIdx} className="text-slate-400 text-sm flex items-start gap-2">
+                                        <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
+                                        {detail}
+                                      </li>
+                                    ));
+                                  })()}
+                                </ul>
+                              )}
+                            </div>
                          </div>
                        ))}
                      </div>

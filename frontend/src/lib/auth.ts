@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
 
           // Validate credentials against backend
           try {
-            const backendUrl = "http://127.0.0.1:8000"; // Use 127.0.0.1 for stability
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // Use 127.0.0.1 for stability
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -141,12 +141,12 @@ export const authOptions: NextAuthOptions = {
       
       try {
         if (user) {
-           const backendUrl = "http://127.0.0.1:8000"; // Use 127.0.0.1 for Windows stability
+           const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
            
            // CRITICAL SECURITY FIX: Check if user exists before allowing login
            try {
              const controller = new AbortController();
-             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+             const timeoutId = setTimeout(() => controller.abort(), 5000);
              
              const checkRes = await fetch(`${backendUrl}/auth/check?email=${encodeURIComponent(user.email || "")}`, {
                signal: controller.signal
@@ -159,25 +159,41 @@ export const authOptions: NextAuthOptions = {
              }
            } catch (err) {
              console.error("❌ Backend check failed or timed out:", err);
-             // If backend is down/slow, we should probably allow if it's a known user 
-             // but strictly for security we return false.
-             // However, to prevent HANG, we move on.
            }
 
-           // User exists, so sync their latest details
+           // STEP 1: Sync user to backend and get consistent UID
            const userData = {
-             uid: user.id,
+             uid: user.id,  // Send OAuth provider ID (will be ignored by backend)
              email: user.email,
              displayName: user.name,
              photoURL: user.image
            };
            
-           // Sync is secondary - don't let it hang the whole login
-           fetch(`${backendUrl}/auth/login`, {
-             method: "POST",
-             headers: { "Content-Type": "application/json" },
-             body: JSON.stringify(userData)
-           }).catch(err => console.error("❌ Async sync failed:", err));
+           try {
+             const controller = new AbortController();
+             const timeoutId = setTimeout(() => controller.abort(), 5000);
+             
+             const syncRes = await fetch(`${backendUrl}/auth/login`, {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify(userData),
+               signal: controller.signal
+             });
+             clearTimeout(timeoutId);
+             
+             if (syncRes.ok) {
+               const backendUser = await syncRes.json();
+               console.log("✅ Backend sync successful, consistent UID:", backendUser.uid);
+               
+               // STEP 2: Override user.id with backend's consistent UID
+               user.id = backendUser.uid;
+             } else {
+               console.error("❌ Backend sync failed:", syncRes.status);
+             }
+           } catch (err) {
+             console.error("❌ Backend sync error:", err);
+             // Continue with login even if sync fails
+           }
         }
         return true;
       } catch (error) {
