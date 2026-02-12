@@ -11,7 +11,7 @@ const toBase64 = (file: File): Promise<string> => {
   });
 };
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 /**
  * Get authentication headers with JWT token
@@ -39,17 +39,20 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 export const analyzeAsset = async (file: File, modality: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'TEXT' | 'EMAIL') => {
   try {
-    console.log(`📤 Starting ${modality} analysis...`, file.name);
+    console.log(`[START] Starting ${modality} analysis...`, file.name);
 
     const formData = new FormData();
     formData.append("file", file);
 
-    console.log(`🔄 Calling Python Backend /analyze endpoint for ${modality}...`);
+    console.log(`[BACKEND] Calling Python Backend /analyze endpoint for ${modality}...`);
 
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
 
-    const response = await fetch(`${BACKEND_URL}/analyze?modality=${modality}`, {
+    const url = `${BACKEND_URL}/analyze?modality=${modality}`;
+    console.log(`[FETCH] Fetching: ${url}`);
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         ...authHeaders,
@@ -68,7 +71,7 @@ export const analyzeAsset = async (file: File, modality: 'IMAGE' | 'VIDEO' | 'AU
         } catch (e) {
           errorMsg = errorText || errorMsg;
         }
-        console.error("❌ API Error:", errorMsg);
+        console.error("[API ERROR]", errorMsg);
         throw new Error(errorMsg);
       }
   

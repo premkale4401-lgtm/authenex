@@ -17,7 +17,8 @@ import {
   Clock,
   ArrowUpRight,
   LogOut,
-  Settings
+  Settings,
+  HelpCircle
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
@@ -232,7 +233,22 @@ export default function DashboardHeader({
                       <User className="w-4 h-4 text-slate-400 group-hover:text-sky-400" />
                       <span className="text-sm font-medium">{t('nav.profile')}</span>
                     </Link>
-
+                    <Link 
+                      href="/dashboard/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group"
+                    >
+                      <Settings className="w-4 h-4 text-slate-400 group-hover:text-sky-400" />
+                      <span className="text-sm font-medium">{t('nav.settings')}</span>
+                    </Link>
+                    <Link 
+                      href="/dashboard/help"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group"
+                    >
+                      <HelpCircle className="w-4 h-4 text-slate-400 group-hover:text-sky-400" />
+                      <span className="text-sm font-medium">{t('nav.help')}</span>
+                    </Link>
                   </div>
                   <div className="p-2">
                     <button

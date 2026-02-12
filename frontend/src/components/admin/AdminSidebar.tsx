@@ -33,7 +33,7 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="w-64 glass-panel flex flex-col border-r border-slate-800 animate-slide-in h-screen sticky top-0">
+    <aside className="hidden lg:block w-64 glass-panel flex flex-col border-r border-slate-800 animate-slide-in h-screen sticky top-0">
       {/* Logo Area */}
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3">

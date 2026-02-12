@@ -11,16 +11,26 @@ import {
   ChevronDown,
   BarChart3,
   Scan,
-  FolderKanban
+  FolderKanban,
+  Settings,
+  HelpCircle,
+  LayoutDashboard,
+  Users,
+  FileCheck,
+  Activity,
+  FileText
 } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function TopNav() {
   const { data: session, status } = useSession();
   const { t } = useLanguage();
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -29,6 +39,24 @@ export default function TopNav() {
     { name: "Analysis", href: "/analyze", icon: Scan },
     { name: "Cases", href: "/cases", icon: FolderKanban },
   ] : [];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isProfileOpen && !target.closest('.profile-dropdown-container')) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   if (status === "loading") {
     return (
@@ -95,7 +123,7 @@ export default function TopNav() {
                 </button>
               </>
             ) : (
-              <div className="relative">
+              <div className="relative profile-dropdown-container">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-sky-500/30 transition-all"
@@ -117,13 +145,107 @@ export default function TopNav() {
                       initial={{ opacity: 0, y: 8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                      className="absolute right-0 mt-2 w-56 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl shadow-sky-500/10 overflow-hidden"
+                      className="absolute right-0 mt-2 w-56 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl shadow-sky-500/10 z-[100]"
                     >
                       <div className="p-3 border-b border-slate-800">
                         <p className="font-medium text-slate-200 text-sm truncate">{session.user?.name}</p>
                         <p className="text-xs text-slate-500 truncate">{session.user?.email}</p>
                       </div>
-                      <div className="p-1.5">
+                      <div className="p-1.5 flex flex-col gap-1">
+                        <Link
+                          key="nav-profile-link"
+                          href="/dashboard/profile"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Profile</span>
+                        </Link>
+                        <Link
+                          key="nav-settings-link"
+                          href="/dashboard/settings"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>Settings</span>
+                        </Link>
+                        <Link
+                          key="nav-help-link"
+                          href="/dashboard/help"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                          <span>Help & Support</span>
+                        </Link>
+                      </div>
+                      
+                      {isAdminRoute && (
+                        <div className="p-1.5 border-t border-slate-800">
+                          <div className="px-3 py-2">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Admin Sections</p>
+                          </div>
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Dashboard
+                          </Link>
+                          <Link
+                            href="/admin/users"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <Users className="w-4 h-4" />
+                            Users
+                          </Link>
+                          <Link
+                            href="/admin/analytics"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                            Analytics
+                          </Link>
+                          <Link
+                            href="/admin/verifications"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <FileCheck className="w-4 h-4" />
+                            Verifications
+                          </Link>
+                          <Link
+                            href="/admin/system"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <Activity className="w-4 h-4" />
+                            Monitoring
+                          </Link>
+                          <Link
+                            href="/admin/settings"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Settings
+                          </Link>
+                          <Link
+                            href="/admin/audit"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Audit Logs
+                          </Link>
+                        </div>
+                      )}
+                      
+                      <div className="p-1.5 border-t border-slate-800">
                         <button
                           onClick={() => signOut({ callbackUrl: "/" })}
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"

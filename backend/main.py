@@ -1397,7 +1397,7 @@ async def analyze_asset(
         # Add data URI prefix based on mime type
         data_uri = f"data:{file.content_type};base64,{file_base64}"
         
-        print(f"📊 Calling ForensicService.analyze_media() with exact logic from AI fraud detection folder...")
+        print(f"[ANALYSIS] Calling ForensicService.analyze_media() with exact logic from AI fraud detection folder...")
         
         # Call the exact ported analysis logic
         analysis = ForensicService.analyze_media(
@@ -1406,13 +1406,13 @@ async def analyze_asset(
             modality=modality
         )
         
-        print(f"✅ Analysis complete: {analysis.get('verdict')} (confidence: {analysis.get('confidence')}%)")
+        print(f"[OK] Analysis complete: {analysis.get('verdict')} (confidence: {analysis.get('confidence')}%)")
         
         # Extract scores
         ai_score = analysis.get("aiPercentage", 50)
         human_score = analysis.get("humanPercentage", 50)
         
-        print(f"🔢 EXTRACTED SCORES - AI: {ai_score}, Human: {human_score}")
+        print(f"[SCORES] EXTRACTED SCORES - AI: {ai_score}, Human: {human_score}")
         
         
         # Process detection layers and add status based on score
@@ -1473,7 +1473,7 @@ async def analyze_asset(
         db.add(scan)
         db.commit()
         db.refresh(scan)
-        print(f"✅ Scan result saved to DB (ID: {scan.id})")
+        print(f"[OK] Scan result saved to DB (ID: {scan.id})")
         
         
         # Explicit validation to catch Pydantic errors in our try/except block
@@ -1483,7 +1483,7 @@ async def analyze_asset(
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"❌ Error processing analysis: {str(e)}")
+        print(f"[ERROR] Error processing analysis: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal Analysis Error: {str(e)}")
 
 # ... existing code ...

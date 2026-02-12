@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
   },
   // Externalize packages that cause issues during build
