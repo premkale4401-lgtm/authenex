@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { FileCheck, Filter, Download, Eye, Trash2, CheckCircle, XCircle, HelpCircle, Image as ImageIcon, Video, Music, FileText } from 'lucide-react';
 import StatsCard from '@/components/admin/shared/StatsCard';
 import DataTable, { Column } from '@/components/admin/shared/DataTable';
@@ -16,62 +17,109 @@ interface Verification {
   aiPercentage: number;
 }
 
-// Mock data  
-const mockVerifications: Verification[] = [
-  {
-    id: '1',
-    filename: 'suspect_profile.jpg',
-    modality: 'IMAGE',
-    verdict:  'AI',
-    confidence: 94.2,
-    user: 'Sarah Chen',
-    timestamp: '2024-02-09T14:30:00Z',
-    aiPercentage: 94.2
-  },
-  {
-    id: '2',
-    filename: 'speech_recording.mp3',
-    modality: 'AUDIO',
-    verdict: 'HUMAN',
-    confidence: 87.5,
-    user: 'Raj Patel',
-    timestamp: '2024-02-09T13:15:00Z',
-    aiPercentage: 12.5
-  },
-  {
-    id: '3',
-    filename: 'evidence_video.mp4',
-    modality: 'VIDEO',
-    verdict: 'UNCERTAIN',
-    confidence: 52.3,
-    user: 'Emily Rodriguez',
-    timestamp: '2024-02-09T12:00:00Z',
-    aiPercentage: 52.3
-  },
-  {
-    id: '4',
-    filename: 'legal_document.pdf',
-    modality: 'DOCUMENT',
-    verdict: 'AI',
-    confidence: 96.8,
-    user: 'Ahmed Hassan',
-    timestamp: '2024-02-09T10:45:00Z',
-    aiPercentage: 96.8
-  },
-  {
-    id: '5',
-    filename: 'witness_statement.jpg',
-    modality: 'IMAGE',
-    verdict: 'HUMAN',
-    confidence: 91.3,
-    user: 'Li Wei',
-    timestamp: '2024-02-09T09:20:00Z',
-    aiPercentage: 8.7
-  }
-];
-
 export default function VerificationsPage() {
-  const [verifications] = useState<Verification[]>(mockVerifications);
+  const { data: session, status } = useSession();
+  const [verifications, setVerifications] = useState<Verification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Wait for session to load
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated') {
+      setError('Please log in to view verifications');
+      setLoading(false);
+      return;
+    }
+
+    const fetchVerifications = async () => {
+      try {
+        setLoading(true);
+        const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        
+        // Get token from session (it's added in auth.ts session callback)
+        const token = (session as any)?.authToken;
+        
+        // Debug: Log token to console
+        console.log("Session Token available:", !!token);
+        
+        // Fetch all scan history (admin endpoint)
+        console.log("Fetching from:", `${BACKEND_URL}/api/admin/scans`);
+        
+        const response = await fetch(`${BACKEND_URL}/api/admin/scans`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("API Error:", response.status, errorData);
+          throw new Error(errorData.detail || `Failed to fetch: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Raw API Response:", data); // Debug: See what backend returns
+        
+        // Handle empty data
+        if (!Array.isArray(data)) {
+          setVerifications([]);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Transform API data to match Verification interface
+        const transformedData: Verification[] = data.map((item: any) => {
+          const aiPercentage = item.ai_percentage || item.aiPercentage || 0;
+          const humanPercentage = item.human_percentage || item.humanPercentage || 0;
+          
+          // Determine verdict based on percentages
+          let verdict: 'AI' | 'HUMAN' | 'UNCERTAIN';
+          if (aiPercentage > 70) {
+            verdict = 'AI';
+          } else if (humanPercentage > 70) {
+            verdict = 'HUMAN';
+          } else {
+            verdict = 'UNCERTAIN';
+          }
+
+          // Determine modality from filename extension
+          const ext = item.filename?.toLowerCase().split('.').pop() || '';
+          let modality: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'DOCUMENT';
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) modality = 'IMAGE';
+          else if (['mp4', 'avi', 'mov', 'webm'].includes(ext)) modality = 'VIDEO';
+          else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) modality = 'AUDIO';
+
+          return {
+            id: item.id || item._id || String(Math.random()),
+            filename: item.filename || 'Unknown file',
+            modality,
+            verdict,
+            confidence: Math.max(aiPercentage, humanPercentage),
+            user: item.user_email || item.user_name || item.userName || 'Unknown User',
+            timestamp: item.timestamp || item.created_at || new Date().toISOString(),
+            aiPercentage
+          };
+        });
+
+        setVerifications(transformedData);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching verifications:', err);
+        setError(err.message || 'Failed to load verification data. Please try again later.');
+        setVerifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVerifications();
+  }, [session, status]);
   
   const aiCount = verifications.filter(v => v.verdict === 'AI').length;
   const humanCount = verifications.filter(v => v.verdict === 'HUMAN').length;
@@ -85,6 +133,29 @@ export default function VerificationsPage() {
       case 'AUDIO': return <Music className="w-4 h-4" />;
       case 'DOCUMENT': return <FileText className="w-4 h-4" />;
       default: return <FileCheck className="w-4 h-4" />;
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this scan? This action cannot be undone.')) return;
+    
+    try {
+      const token = (session as any)?.authToken;
+      const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      
+      const response = await fetch(`${BACKEND_URL}/api/scan/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete scan');
+      
+      setVerifications(prev => prev.filter(v => v.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete scan: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
@@ -184,7 +255,24 @@ export default function VerificationsPage() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {/* Content - Only show when not loading */}
+      {!loading && !error && (
+        <>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Scans"
@@ -223,15 +311,18 @@ export default function VerificationsPage() {
         searchPlaceholder="Search by filename, analyst, or verdict..."
         actions={(v) => (
           <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-sky-500/10 rounded-lg transition-colors group" title="View Details">
-              <Eye className="w-4 h-4 text-slate-400 group-hover:text-sky-400" />
-            </button>
-            <button className="p-2 hover:bg-red-500/10 rounded-lg transition-colors group" title="Delete">
+            <button 
+              onClick={() => handleDelete(v.id)}
+              className="p-2 hover:bg-red-500/10 rounded-lg transition-colors group" 
+              title="Delete"
+            >
               <Trash2 className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
             </button>
           </div>
         )}
       />
+      </>
+      )}
     </div>
   );
 }

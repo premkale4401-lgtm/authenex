@@ -32,14 +32,14 @@ if DATABASE_URL.startswith("postgresql://"):
 
 print(f"[DB] Connecting to database: {DATABASE_URL[:50]}...")
 
-# Create engine with production-safe settings
+# Connect
+print(f"[DB] Connecting to database: {DATABASE_URL.split('@')[-1]}") # Hide credentials
 engine = create_engine(
     DATABASE_URL,
-    echo=os.getenv("SQL_DEBUG", "false").lower() == "true",
-    pool_pre_ping=True,  # Verify connections before using
-    pool_size=5,  # Neon free tier limit
-    max_overflow=0,  # Strict connection limit - no overflow
-    pool_recycle=300,  # Recycle connections every 5 min
+    pool_pre_ping=True,
+    pool_recycle=1800,
+    pool_size=10,
+    max_overflow=20
 )
 
 # Session factory

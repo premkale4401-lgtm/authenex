@@ -96,19 +96,8 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name = user.name;
         
-        // Identify Admin users
-        // Rule 1: Email ends with @authenex.gov
-        // Rule 2: Specific admin emails
-        const adminEmails = ["admin@authenex.gov", "visha@authenex.gov"];
-        const isAdminEmail = user.email?.endsWith("@authenex.gov") || (user.email && adminEmails.includes(user.email));
-        
-        if (isAdminEmail) {
-          token.role = "ADMIN";
-          token.clearanceLevel = 5;
-        } else {
-          token.role = (user as any).role || "USER";
-          token.clearanceLevel = (user as any).clearanceLevel || 1;
-        }
+        token.role = (user as any).role || "USER";
+        token.clearanceLevel = (user as any).clearanceLevel || 1;
       }
       return token;
     },

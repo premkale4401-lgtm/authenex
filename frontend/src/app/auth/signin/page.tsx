@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { 
@@ -190,7 +190,9 @@ export default function SignIn() {
         setError("Invalid email or password. If you don't have an account, please create one first.");
         setIsLoading(false);
       } else {
-         if (role === "ADMIN") {
+         // Fetch session to Check ACTUAL role
+         const session = await getSession();
+         if (session?.user && (session.user as any).role === "ADMIN") {
             window.location.href = "/admin";
         } else {
             window.location.href = "/dashboard";
@@ -399,23 +401,7 @@ export default function SignIn() {
                 className="space-y-4"
               >
                 {/* Role Selection */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-900/50 rounded-lg border border-slate-800/50">
-                  {['ADMIN', 'ANALYST'].map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRole(r)}
-                      suppressHydrationWarning
-                      className={`text-xs font-semibold py-2 rounded-md transition-all duration-300 ${
-                        role === r 
-                          ? 'bg-sky-500/20 text-sky-400 shadow-sm ring-1 ring-sky-500/50' 
-                          : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                      }`}
-                    >
-                      {r === 'ADMIN' ? 'Admin' : 'Analyst'}
-                    </button>
-                  ))}
-                </div>
+                {/* Role Selection Removed - Auto Detection */}
 
                 <FloatingInput
                   id="email"

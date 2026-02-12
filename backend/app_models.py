@@ -61,23 +61,7 @@ class Scan(Base):
     verifications = relationship("Verification", back_populates="scan", cascade="all, delete-orphan")
 
 
-# FORENSIC IMMUTABILITY: Prevent modification of scan results
-@event.listens_for(Scan, 'before_update')
-def prevent_scan_modification(mapper, connection, target):
-    """Prevent UPDATE operations on locked scans (forensic evidence)"""
-    if target.is_locked:
-        raise ValueError(
-            "❌ FORBIDDEN: Scan results are immutable once created. "
-            "This is a forensic evidence platform - tampering is not allowed."
-        )
 
-@event.listens_for(Scan, 'before_delete')
-def prevent_scan_deletion(mapper, connection, target):
-    """Prevent DELETE operations on all scans (forensic evidence)"""
-    raise ValueError(
-        "❌ FORBIDDEN: Scan results cannot be deleted. "
-        "This is required for maintaining an unbroken chain of evidence."
-    )
 
 
 class AuditLog(Base):

@@ -1,42 +1,74 @@
 "use client";
 
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { TrendingUp, Activity, Users, FileCheck, Download } from 'lucide-react';
 import StatsCard from '@/components/admin/shared/StatsCard';
 
-// Mock data for charts
-const verificationTrends = [
-  { date: 'Jan', verified: 4200, flagged: 830, uncertain: 420 },
-  { date: 'Feb', verified: 3800, flagged: 920, uncertain: 380 },
-  { date: 'Mar', verified: 5100, flagged: 1100, uncertain: 510 },
-  { date: 'Apr', verified: 6300, flagged: 980, uncertain: 630 },
-  { date: 'May', verified: 5900, flagged: 1200, uncertain: 590 },
-  { date: 'Jun', verified: 7200, flagged: 1350, uncertain: 720 },
-];
-
-const modalityDistribution = [
-  { name: 'Image', value: 4500, color: '#0ea5e9' },
-  { name: 'Video', value: 2800, color: '#6366f1' },
-  { name: 'Audio', value: 1200, color: '#10b981' },
-  { name: 'Document', value: 800, color: '#f59e0b' }
-];
-
-const verdictAccuracy = [
-  { model: 'Gemini Flash', accuracy: 94.2 },
-  { model: 'Gemini Pro', accuracy: 96.8 },
-  { model: 'Ensemble', accuracy: 97.5 },
-];
-
-const hourlyActivity = [
-  { hour: '00:00', scans: 45 },
-  { hour: '04:00', scans: 28 },
-  { hour: '08:00', scans: 142 },
-  { hour: '12:00', scans: 289 },
-  { hour: '16:00', scans: 312 },
-  { hour: '20:00', scans: 198 },
-];
-
 export default function AnalyticsPage() {
+  const { data: session, status } = useSession();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      setError("Please log in to view analytics");
+      setLoading(false);
+      return;
+    }
+
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        const token = (session as any)?.authToken;
+
+        const response = await fetch(`${BACKEND_URL}/api/admin/analytics`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch analytics data');
+        
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [session, status]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-500/10 p-6 rounded-xl border border-red-500/20 text-center">
+        <p className="text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  // Use fetched data or fallbacks
+  const verificationTrends = data?.verificationTrends || [];
+  const modalityDistribution = data?.modalityDistribution || [];
+  const modelAccuracy = data?.modelAccuracy || [];
+  const hourlyActivity = data?.hourlyActivity || [];
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
           {/* Header */}
@@ -55,34 +87,32 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
               title="Total Verifications"
-              value="43.2K"
+              value={data?.totalVerifications || 0}
               icon={FileCheck}
               accentColor="sky"
-              trend={{ value: 18, isPositive: true }}
-              description="Last 30 days"
+              trend={{ value: 0, isPositive: true }} // Trend requires historical comparison
+              description="All time"
             />
             <StatsCard
               title="Avg. Accuracy"
-              value="96.8%"
+              value={data?.avgAccuracy || "0%"}
               icon={Activity}
               accentColor="emerald"
-              trend={{ value: 2.4, isPositive: true }}
-              description="Model performance"
+              description="Model Mean Confidence"
             />
             <StatsCard
               title="Active Users"
-              value="1,248"
+              value={data?.activeUsers || 0}
               icon={Users}
               accentColor="indigo"
-              trend={{ value: 12, isPositive: true }}
-              description="Currently verifying"
+              description="Total scanning users"
             />
             <StatsCard
               title="Peak Activity"
-              value="16:00"
+              value={data?.peakActivity || "N/A"}
               icon={TrendingUp}
               accentColor="amber"
-              description="4PM daily average"
+              description="Daily peak hour"
             />
           </div>
 
@@ -113,9 +143,9 @@ export default function AnalyticsPage() {
                   labelStyle={{ color: '#cbd5e1' }}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="verified" stroke="#10b981" fill="url(#colorVerified)" strokeWidth={2} />
-                <Area type="monotone" dataKey="flagged" stroke="#f59e0b" fill="url(#colorFlagged)" strokeWidth={2} />
-                <Area type="monotone" dataKey="uncertain" stroke="#6366f1" fill="url(#colorUncertain)" strokeWidth={2} />
+                <Area type="monotone" dataKey="verified" name="Authentic" stroke="#10b981" fill="url(#colorVerified)" strokeWidth={2} />
+                <Area type="monotone" dataKey="flagged" name="AI Generated" stroke="#f59e0b" fill="url(#colorFlagged)" strokeWidth={2} />
+                <Area type="monotone" dataKey="uncertain" name="Uncertain" stroke="#6366f1" fill="url(#colorUncertain)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -137,8 +167,8 @@ export default function AnalyticsPage() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {modalityDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {modalityDistribution.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || '#64748b'} />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -150,16 +180,16 @@ export default function AnalyticsPage() {
 
             {/* Model Accuracy Comparison */}
             <div className="glass-panel p-6 rounded-xl border border-slate-800">
-              <h2 className="text-xl font-bold text-white mb-6">Model Accuracy Comparison</h2>
+              <h2 className="text-xl font-bold text-white mb-6">Model Confidence Comparison</h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={verdictAccuracy}>
+                <BarChart data={modelAccuracy}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="model" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" domain={[90, 100]} />
+                  <YAxis stroke="#94a3b8" domain={[0, 100]} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
                   />
-                  <Bar dataKey="accuracy" fill="#0ea5e9" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="accuracy" name="Avg Confidence %" fill="#0ea5e9" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

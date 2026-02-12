@@ -6,11 +6,8 @@ import {
   Users, 
   BarChart3, 
   FileCheck, 
-  Settings, 
-  FileText, 
   LogOut,
   Shield,
-  Activity,
   User
 } from "lucide-react";
 import Link from 'next/link';
@@ -109,51 +106,6 @@ export default function AdminSidebar() {
           <FileCheck className="w-5 h-5" />
           <span>Verifications</span>
           {isActive('/admin/verifications') && (
-            <div className="ml-auto w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
-          )}
-        </Link>
-
-        <Link 
-          href="/admin/system" 
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
-            isActive('/admin/system')
-              ? 'text-sky-400 bg-sky-900/10' 
-              : 'text-slate-400 hover:text-sky-400 hover:bg-sky-900/10'
-          }`}
-        >
-          <Activity className="w-5 h-5" />
-          <span>Monitoring</span>
-          {isActive('/admin/system') && (
-            <div className="ml-auto w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
-          )}
-        </Link>
-
-        <Link 
-          href="/admin/settings" 
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
-            isActive('/admin/settings')
-              ? 'text-sky-400 bg-sky-900/10' 
-              : 'text-slate-400 hover:text-sky-400 hover:bg-sky-900/10'
-          }`}
-        >
-          <Settings className="w-5 h-5" />
-          <span>Settings</span>
-          {isActive('/admin/settings') && (
-            <div className="ml-auto w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
-          )}
-        </Link>
-
-        <Link 
-          href="/admin/audit" 
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
-            isActive('/admin/audit')
-              ? 'text-sky-400 bg-sky-900/10' 
-              : 'text-slate-400 hover:text-sky-400 hover:bg-sky-900/10'
-          }`}
-        >
-          <FileText className="w-5 h-5" />
-          <span>Audit Logs</span>
-          {isActive('/admin/audit') && (
             <div className="ml-auto w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
           )}
         </Link>

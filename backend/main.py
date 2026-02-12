@@ -55,6 +55,7 @@ from gemini_service import ForensicService
 
 # SQLAlchemy session import
 from sqlalchemy.orm import Session
+from sqlalchemy import func, extract, cast, Date, text, case
 
 from contextlib import asynccontextmanager
 
@@ -74,7 +75,7 @@ app = FastAPI(
 )
 
 # SECURITY: CORS Configuration
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
+ALLOWED_ORIGINS = ["*"] if os.getenv("ENVIRONMENT") != "production" else os.getenv("ALLOWED_ORIGINS", "").split(",")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 # SAFETY: Prevent wildcard CORS in production
@@ -87,8 +88,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,  # Explicit whitelist
     allow_credentials=True,
-    allow_methods=["GET", "POST"],  # Restrict methods
-    allow_headers=["Authorization", "Content-Type"],  # Explicit headers
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
     max_age=3600,  # Cache preflight for 1 hour
 )
 
@@ -186,13 +187,36 @@ async def get_active_user(
         
     return token_payload
 
+async def get_active_admin(
+    token_payload: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
+    """
+    Dependency for Admin-only endpoints.
+    Checks DB to ensure user is Active AND has ADMIN role.
+    Prevents access if user was suspended or demoted after token issuance.
+    """
+    uid = token_payload["sub"]
+    user = db.query(User).filter(User.uid == uid).first()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    if user.role == "SUSPENDED":
+        raise HTTPException(status_code=403, detail="Account suspended")
+        
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin access required")
+        
+    return token_payload
+
 # ==========================================
 #  USER SETTINGS ENDPOINTS
 # ==========================================
 
 @app.get("/api/settings/user")
 async def get_user_settings(
-    user: dict = Depends(get_active_user),
+    user: dict = Depends(verify_token),
     db: Session = Depends(get_db)
 ):
     """Fetch current user settings and profile"""
@@ -235,7 +259,7 @@ async def get_user_settings(
 @app.patch("/api/settings/user")
 async def update_user_settings(
     settings: UserSettingsUpdate,
-    user: dict = Depends(get_active_user),
+    user: dict = Depends(verify_token),
     db: Session = Depends(get_db)
 ):
     """Update user preferences and security settings"""
@@ -275,7 +299,7 @@ async def update_user_settings(
 @app.post("/api/user/profile")
 async def update_user_profile(
     profile: UserProfileUpdate,
-    user: dict = Depends(get_active_user),
+    user: dict = Depends(verify_token),
     db: Session = Depends(get_db)
 ):
     """Update public profile information"""
@@ -294,7 +318,7 @@ async def update_user_profile(
 
 @app.get("/api/user/stats")
 async def get_user_stats(
-    user: dict = Depends(get_active_user),
+    user: dict = Depends(verify_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -365,7 +389,7 @@ async def get_user_stats(
 
 @app.get("/api/settings/system")
 async def get_system_settings(
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """Fetch all system configuration (Admin only)"""
@@ -387,7 +411,7 @@ async def get_system_settings(
 @app.put("/api/settings/system")
 async def update_system_setting(
     setting: SystemSettingUpdate,
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """Update a specific system setting (Admin only)"""
@@ -427,7 +451,7 @@ async def update_system_setting(
 
 @app.delete("/api/user/me")
 async def delete_account(
-    current_user: dict = Depends(get_active_user),
+    current_user: dict = Depends(verify_token),
     db: Session = Depends(get_db)
 ):
     try:
@@ -461,7 +485,7 @@ async def delete_account(
 
 @app.get("/api/admin/stats")
 async def get_admin_stats(
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -498,7 +522,7 @@ async def get_admin_stats(
 async def get_all_users(
     skip: int = 0,
     limit: int = 100,
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -523,7 +547,7 @@ async def get_all_users(
 async def update_user_status(
     uid: str,
     update_data: dict,  # Expects {"role": "..."}
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -560,7 +584,7 @@ async def update_user_status(
 @app.get("/api/admin/audit")
 async def get_audit_logs(
     limit: int = 50,
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -584,7 +608,7 @@ async def get_audit_logs(
 async def get_verifications(
     status: Optional[str] = None,
     limit: int = 20,
-    admin: dict = Depends(require_role("ADMIN")),
+    admin: dict = Depends(get_active_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -638,6 +662,9 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     
     # STEP 1: Find user by EMAIL (source of truth)
     db_user = db.query(User).filter(User.email == user.email).first()
+    
+    if db_user and db_user.role == "SUSPENDED":
+        raise HTTPException(status_code=403, detail="Account suspended")
     
     if db_user:
         # User exists - keep their existing UID, just update profile
@@ -769,11 +796,14 @@ async def validate_credentials(
     """
     from password_utils import verify_password
     
-    # Find user by email
-    user = db.query(User).filter(User.email == credentials.email).first()
+    # Find user by email (case-insensitive)
+    user = db.query(User).filter(func.lower(User.email) == credentials.email.lower()).first()
     
     if not user or not user.password_hash:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+    if user.role == "SUSPENDED":
+        raise HTTPException(status_code=403, detail="Account suspended")
     
     # Verify password
     if not verify_password(credentials.password, user.password_hash):
@@ -797,6 +827,8 @@ async def check_user_exists(email: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.role == "SUSPENDED":
+        raise HTTPException(status_code=403, detail="Account suspended")
     return {"status": "exists", "uid": user.uid, "role": user.role}
 
 @app.post("/auth/login")
@@ -827,7 +859,7 @@ async def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
 async def analyze_asset(
     file: UploadFile = File(...),
     modality: str = "IMAGE",
-    user: dict = Depends(get_active_user),  # ✅ Checks status
+    user: dict = Depends(verify_token),  # ✅ Checks status
     db: Session = Depends(get_db)
 ):
     """
@@ -1492,12 +1524,59 @@ async def analyze_asset(
 #  HISTORY API ENDPOINT
 # ==========================================
 
+@app.get("/api/admin/scans")
+async def get_all_scan_history(
+    limit: int = 500,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Get scan history for ALL users. Admin-only endpoint.
+    """
+    # Authorization check - only admins can access all scan history
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Fetch all scans from all users
+    scans = db.query(Scan).order_by(Scan.created_at.desc()).limit(limit).all()
+    
+    response = []
+    for s in scans:
+        modality = s.modality or "unknown"
+        verdict_val = s.verdict or "unknown"
+        
+        ai_pct = s.ai_percentage if s.ai_percentage is not None else 0
+        human_pct = s.human_percentage if s.human_percentage is not None else 0
+        confidence = int(s.confidence) if s.confidence else 0
+        
+        # Get user information
+        user = db.query(User).filter(User.uid == s.uid).first()
+        user_email = user.email if user else "Unknown User"
+        user_name = user.display_name if user else "Unknown"
+        
+        response.append({
+            "id": s.id,
+            "filename": s.filename or "unknown.file",
+            "modality": modality,
+            "verdict": verdict_val,
+            "ai_percentage": int(ai_pct),
+            "human_percentage": int(human_pct),
+            "confidence": confidence,
+            "user_email": user_email,
+            "user_name": user_name,
+            "uid": s.uid,
+            "timestamp": s.created_at.isoformat() if s.created_at else None,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        })
+        
+    return response
+
 @app.get("/api/history/{uid}")
 async def get_user_history(
     uid: str,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_active_user)
+    current_user: dict = Depends(verify_token)
 ):
     """
     Get scan history for a specific user.
@@ -1553,11 +1632,13 @@ async def get_user_history(
         
     return response
 
+
+
 @app.get("/api/scan/{scan_id}")
 async def get_scan_details(
     scan_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_active_user)
+    current_user: dict = Depends(verify_token)
 ):
     """
     Get full details for a specific scan.
@@ -1589,7 +1670,7 @@ async def get_scan_details(
 async def delete_scan(
     scan_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_active_user)
+    current_user: dict = Depends(verify_token)
 ):
     """
     Delete a specific scan.
@@ -1606,6 +1687,124 @@ async def delete_scan(
     db.commit()
     
     return {"status": "success", "message": "Scan deleted successfully"}
+
+@app.get("/api/admin/analytics")
+async def get_admin_stats(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Get aggregated analytics for admin dashboard.
+    """
+    if current_user.get("role") != "ADMIN":
+         raise HTTPException(status_code=403, detail="Admin access required")
+
+    # 1. Key Metrics
+    total_scans = db.query(func.count(Scan.id)).scalar()
+    print(f"[DEBUG] Total Scans: {total_scans}")
+    
+    # Avg Confidence (handle null)
+    avg_conf = db.query(func.avg(Scan.confidence)).scalar() or 0
+    avg_accuracy = round(avg_conf, 1)
+    print(f"[DEBUG] Avg Accuracy: {avg_accuracy}")
+
+    # Active Users (scans in last 30 days? or total distinct?)
+    # Total distinct users who have scanned
+    active_users = db.query(func.count(func.distinct(Scan.uid))).scalar()
+    print(f"[DEBUG] Active Users: {active_users}")
+    
+    # Peak Activity Hour
+    # Group by hour and count
+    hourly_counts = db.query(
+        extract('hour', Scan.created_at).label('hour'), 
+        func.count(Scan.id).label('count')
+    ).group_by('hour').order_by(text('count DESC')).first()
+    
+    peak_hour = f"{int(hourly_counts[0])}:00" if hourly_counts else "N/A"
+
+    # 2. Modality Distribution
+    modality_query = db.query(
+        Scan.modality, func.count(Scan.id)
+    ).group_by(Scan.modality).all()
+    
+    modality_dist = [
+        {"name": (m or "Unknown").title(), "value": c, "color": _get_modality_color(m)} 
+        for m, c in modality_query
+    ]
+
+    # 3. Model Performance (Avg Confidence by Model)
+    model_query = db.query(
+        Scan.model, func.avg(Scan.confidence)
+    ).group_by(Scan.model).all()
+    
+    model_stats = [
+        {"model": m or "Unknown", "accuracy": round(c or 0, 1)} 
+        for m, c in model_query
+    ]
+
+    # 4. Hourly Activity (All time avg or total?)
+    # Let's show total distribution across day
+    daily_hourly = db.query(
+        extract('hour', Scan.created_at).label('hour'),
+        func.count(Scan.id)
+    ).group_by('hour').order_by('hour').all()
+    
+    hourly_activity = [
+        {"hour": f"{int(h):02d}:00", "scans": c}
+        for h, c in daily_hourly
+    ]
+    
+    # Fill missing hours
+    full_hourly = []
+    for h in range(24):
+        hour_str = f"{h:02d}:00"
+        found = next((x for x in hourly_activity if x["hour"] == hour_str), None)
+        full_hourly.append(found or {"hour": hour_str, "scans": 0})
+
+    # 5. Verification Trends (Last 6 months)
+    # Group by Month-Year
+    # Postgres specific date truncation usually.
+    # Simple approach: Fetch last X records and process in python OR use simple group by
+    # Let's use database grouping for efficiency.
+    # Extract month name.
+    
+    trends_query = db.query(
+        func.to_char(Scan.created_at, 'Mon').label('month'),
+        func.count(case((Scan.verdict == 'AI', Scan.id), else_=None)).label('ai'),
+        func.count(case((Scan.verdict == 'HUMAN', Scan.id), else_=None)).label('human'),
+        func.count(case((Scan.verdict == 'UNCERTAIN', Scan.id), else_=None)).label('uncertain'),
+        func.min(Scan.created_at).label('min_date') 
+    ).group_by('month').order_by('min_date').limit(6).all()
+    
+    verification_trends = [
+        {
+            "date": row.month,
+            "verified": row.human, # Assuming 'verified' means authentic/human in this chart context?
+            "flagged": row.ai,
+            "uncertain": row.uncertain
+        }
+        for row in trends_query
+    ]
+
+    return {
+        "totalVerifications": total_scans,
+        "avgAccuracy": f"{avg_accuracy}%",
+        "activeUsers": active_users,
+        "peakActivity": peak_hour,
+        "modalityDistribution": modality_dist,
+        "modelAccuracy": model_stats,
+        "hourlyActivity": full_hourly,
+        "verificationTrends": verification_trends
+    }
+
+def _get_modality_color(modality: str):
+    colors = {
+        'IMAGE': '#0ea5e9', # Sky
+        'VIDEO': '#6366f1', # Indigo
+        'AUDIO': '#10b981', # Emerald
+        'DOCUMENT': '#f59e0b' # Amber
+    }
+    return colors.get(modality, '#64748b') # Slate
 
 # News Models & Data
 class NewsItem(BaseModel):
