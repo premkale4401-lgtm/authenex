@@ -9,7 +9,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 if not DATABASE_URL:
     raise RuntimeError(
-        "❌ FATAL: DATABASE_URL environment variable is required.\n"
+        "[FATAL] DATABASE_URL environment variable is required.\n"
         "For local dev: export DATABASE_URL='sqlite:///./authenex.db'\n"
         "For production: Set PostgreSQL connection string in Railway/Vercel"
     )
@@ -23,14 +23,14 @@ if DATABASE_URL.startswith("postgresql://"):
     if "sslmode=" not in DATABASE_URL:
         if ENVIRONMENT == "production":
             raise RuntimeError(
-                "❌ FATAL: PostgreSQL connections must use sslmode=require in production.\n"
+                "[FATAL] PostgreSQL connections must use sslmode=require in production.\n"
                 "Add '?sslmode=require' to your DATABASE_URL"
             )
         # Prefer SSL in development
         separator = "?" if "?" not in DATABASE_URL else "&"
         DATABASE_URL += f"{separator}sslmode=prefer"
 
-print(f"🔌 Connecting to database: {DATABASE_URL[:50]}...")
+print(f"[DB] Connecting to database: {DATABASE_URL[:50]}...")
 
 # Create engine with production-safe settings
 engine = create_engine(
@@ -57,7 +57,7 @@ def init_db():
     """Create all tables"""
     try:
         Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created successfully")
+        print("[OK] Database tables created successfully")
     except Exception as e:
-        print(f"❌ Error creating tables: {e}")
+        print(f"[ERROR] Error creating tables: {e}")
         raise

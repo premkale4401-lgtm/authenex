@@ -30,18 +30,18 @@ env_paths = [
 env_loaded = False
 for env_path in env_paths:
     if env_path.exists():
-        print(f"✅ Loading environment from: {env_path}")
+        print(f"[OK] Loading environment from: {env_path}")
         load_dotenv(dotenv_path=env_path)
         env_loaded = True
         # Debug: Check if DATABASE_URL is loaded
         if os.getenv("DATABASE_URL"):
-            print(f"✅ DATABASE_URL loaded successfully")
+            print(f"[OK] DATABASE_URL loaded successfully")
         else:
-            print(f"⚠️  DATABASE_URL not found in {env_path}")
+            print(f"[WARN] DATABASE_URL not found in {env_path}")
         break
 
 if not env_loaded:
-    print(f"⚠️  WARNING: Could not find .env file. Tried: {[str(p) for p in env_paths]}")
+    print(f"[WARN] WARNING: Could not find .env file. Tried: {[str(p) for p in env_paths]}")
 
 # NOW import db_config (after environment is loaded)
 from db_config import get_db, init_db
@@ -62,7 +62,7 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
     init_db()
-    print("✅ Database initialized")
+    print("[OK] Database initialized")
     yield
     # Shutdown logic (none needed for now)
 
@@ -81,7 +81,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 if "*" in ALLOWED_ORIGINS and ENVIRONMENT == "production":
     raise RuntimeError("❌ FATAL: Wildcard CORS origins are forbidden in production")
 
-print(f"🔒 CORS Origins: {ALLOWED_ORIGINS}")
+print(f"[CORS] Origins: {ALLOWED_ORIGINS}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -200,7 +200,7 @@ async def get_user_settings(
     if not db_user:
         # AUTO-RECOVERY: User exists in Auth (JWT) but not in DB
         # This handles cases where DB was reset or sync failed
-        print(f"♻️  Auto-recovering user from JWT: {user.get('email')}")
+        print(f"[RECOVERY] Auto-recovering user from JWT: {user.get('email')}")
         try:
             # Try to create the user
             new_user = User(
@@ -619,6 +619,12 @@ async def root():
         "supported_modalities": ["image", "video", "audio", "document"]
     }
 
+@app.get("/test-simple")
+async def test_simple():
+    """Simple test endpoint with no dependencies"""
+    print("[TEST] Simple test endpoint called")
+    return {"status": "ok", "message": "Simple endpoint works"}
+
 @app.post("/auth/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     """
@@ -635,7 +641,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     
     if db_user:
         # User exists - keep their existing UID, just update profile
-        print(f"✅ Existing user found: {user.email} with UID: {db_user.uid}")
+        print(f"[OK] Existing user found: {user.email} with UID: {db_user.uid}")
         db_user.display_name = user.displayName
         db_user.photo_url = user.photoURL
         db.commit()
@@ -646,7 +652,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         email_hash = hashlib.sha256(user.email.lower().encode()).hexdigest()[:16]
         consistent_uid = f"user-{email_hash}"
         
-        print(f"🆕 Creating new user: {user.email} with consistent UID: {consistent_uid}")
+        print(f"[NEW] Creating new user: {user.email} with consistent UID: {consistent_uid}")
         
         try:
             db_user = User(
@@ -658,10 +664,10 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
             db.add(db_user)
             db.commit()
             db.refresh(db_user)
-            print(f"✅ Created new user: {user.email}")
+            print(f"[OK] Created new user: {user.email}")
         except Exception as e:
             db.rollback()
-            print(f"❌ Failed to create user: {e}")
+            print(f"[ERROR] Failed to create user: {e}")
             raise HTTPException(status_code=500, detail="User creation failed")
     
     # Create audit log
@@ -748,7 +754,7 @@ async def register_user(
         }
     except Exception as e:
         db.rollback()
-        print(f"❌ Registration error: {e}")
+        print(f"[ERROR] Registration error: {e}")
         raise HTTPException(status_code=500, detail="Registration failed")
 
 
@@ -958,7 +964,7 @@ async def analyze_asset(
             print(f"Video uploaded to Gemini: {video_file.name}")
             
             # Wait for processing
-            print(f"⌛ Waiting for video processing...")
+            print(f"[WAIT] Waiting for video processing...")
             while video_file.state.name == "PROCESSING":
                 import time
                 time.sleep(2)
@@ -1679,27 +1685,30 @@ async def get_news(category: str = "all", limit: int = 20):
     newsdata_key = os.getenv("NEWSDATA_API_KEY")
     if newsdata_key:
         try:
-            print("🌍 Fetching live news from NewsData.io...")
+            print("[INFO] Fetching live news from NewsData.io...")
             # STRATEGY: Threat Intelligence & Public Awareness (STRICT MODE)
             # 1. Fetch BROAD news using short keyword queries (avoids 422 error)
             # 2. FILTER locally using strict risk keywords
             
             # Risk Keywords for Local Filtering
-            # News item MUST contain at least one of these to be shown
+            # Features: Tech-focused Crime, AI Misuse, Cyber Attacks (NO generic fraud/crime)
             risk_keywords = [
-                'scam', 'fraud', 'crime', 'police', 'arrest', 'warning', 'ban', 'illegal', 
-                'victim', 'attack', 'hacker', 'breach', 'security', 'theft', 'deepfake'
+                'cyber', 'ai', 'artificial intelligence', 'deepfake', 'hacking', 'hacker', 
+                'malware', 'ransomware', 'phishing', 'data breach', 'botnet', 'ddos', 
+                'spyware', 'trojan', 'zero-day', 'exploit', 'vulnerability', 'tech support scam',
+                'crypto', 'bitcoin', 'ethereum', 'dark web', 'identity theft'
             ]
             
             # Short API Queries (Max 100 chars)
+            # FOCUS: Strictly Tech & Cyber Incidents
             short_queries = {
-                "all": "deepfake OR cybercrime OR 'ai scam'",
-                "deepfake": "deepfake OR 'voice cloning'",
-                "cybercrime": "cybercrime OR phishing",
-                "government": "'ai regulation' OR 'it act'",
-                "ai": "'ai safety' OR deepfake",
-                "cases": "'ai fraud' OR 'crypto scam'",
-                "social": "'social media' AND fake"
+                "all": "deepfake OR cybercrime OR 'ai scam' OR 'data breach' OR 'tech fraud'",
+                "deepfake": "deepfake OR 'synthetic media' OR 'face swap' OR 'voice clone'",
+                "cybercrime": "cybercrime OR phishing OR ransomware OR hacking",
+                "government": "'state hacker' OR 'cyber warfare' OR 'espionage' OR 'apt group'", 
+                "ai": "'ai safety' OR 'adversarial ai' OR 'ai weapon' OR deepfake", 
+                "cases": "'ai fraud' OR 'crypto scam' OR 'tech scam' OR 'cyber arrest'",
+                "social": "'social media' AND (bot OR misinformation OR fake)"
             }
             
             query = short_queries.get(category, "artificial intelligence")
@@ -1711,7 +1720,7 @@ async def get_news(category: str = "all", limit: int = 20):
                 "language": "en",
                 "q": query,
                 "country": "in,us,gb", 
-                "category": "technology,science,crime,politics" 
+                "category": "technology,science,crime" # Removed 'politics' to reduce noise
             }
             
             response = requests.get(api_url, params=params)
@@ -1748,17 +1757,17 @@ async def get_news(category: str = "all", limit: int = 20):
                             print(f"Skipping invalid news item: {e}")
                             continue
                             
-                    print(f"✅ Fetched {len(live_news)} live articles (after strict filtering)")
+                    print(f"[OK] Fetched {len(live_news)} live articles (after strict filtering)")
                     if live_news:
                         return {"success": True, "news": live_news[:limit]}
             else:
-                print(f"❌ NewsData.io API Error: {response.status_code} - {response.text}")
+                print(f"[ERROR] NewsData.io API Error: {response.status_code} - {response.text}")
                 
         except Exception as e:
-            print(f"❌ Failed to fetch live news: {str(e)}")
+            print(f"[ERROR] Failed to fetch live news: {str(e)}")
             
     # 2. Fallback to Mock Data
-    print("⚠️  Using mock news data (API key missing or fetch failed)")
+    print("[WARN] Using mock news data (API key missing or fetch failed)")
     if category == "all":
         return {"success": True, "news": MOCK_NEWS[:limit]}
     
@@ -1881,81 +1890,92 @@ async def chat_handler(request: ChatRequest):
 #  NEWS API ENDPOINT
 # ==========================================
 
-@app.get("/api/news")
+@app.get("/api/news_disabled")
 async def get_news_feed(category: str = "all", limit: int = 10):
     """
     Fetch cybersecurity and forensics news.
     Falls back to mock data if NewsData API is unavailable.
     """
-    NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY")
-    
-    # Mock news data for fallback
-    mock_news = [
-        {
-            "id": f"mock-{i}",
-            "title": f"Latest Developments in Deepfake Detection Technology",
-            "summary": "Researchers unveil new AI-powered methods for identifying synthetic media with unprecedented accuracy.",
-            "source": "Authenex Research",
-            "publishedAt": "2024-02-10T09:00:00Z",
-            "imageUrl": None,
-            "url": "#",
-            "category": category if category != "all" else "deepfake",
-            "isLive": False
-        }
-        for i in range(1, min(limit, 10) + 1)
-    ]
-    
-    if not NEWSDATA_API_KEY:
-        print("⚠️ NEWSDATA_API_KEY not configured. Returning mock news.")
-        return {"success": True, "news": mock_news}
-    
-    # News categories mapping
-    category_queries = {
-        "all": "cybersecurity OR deepfake OR digital forensics",
-        "deepfake": "deepfake OR synthetic media",
-        "cybercrime": "cybercrime OR data breach",
-        "ai": "artificial intelligence security",
-        "government": "cybersecurity policy",
-        "cases": "digital forensics cases",
-        "social": "misinformation OR fake news"
-    }
-    
-    query = category_queries.get(category, "cybersecurity")
-    
     try:
-        api_url = f"https://newsdata.io/api/1/news"
-        params = {
-            "apikey": NEWSDATA_API_KEY,
-            "q": query,
-            "language": "en",
-            "size": min(limit, 10)
+        import traceback
+        print(f"[NEWS API] Request received: category={category}, limit={limit}")
+        
+        NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY")
+        
+        # Mock news data for fallback
+        mock_news = [
+            {
+                "id": f"mock-{i}",
+                "title": f"Latest Developments in Deepfake Detection Technology",
+                "summary": "Researchers unveil new AI-powered methods for identifying synthetic media with unprecedented accuracy.",
+                "source": "Authenex Research",
+                "publishedAt": "2024-02-10T09:00:00Z",
+                "imageUrl": None,
+                "url": "#",
+                "category": category if category != "all" else "deepfake",
+                "isLive": False
+            }
+            for i in range(1, min(limit, 10) + 1)
+        ]
+        
+        if not NEWSDATA_API_KEY:
+            print("[WARN] NEWSDATA_API_KEY not configured. Returning mock news.")
+            return {"success": True, "news": mock_news}
+        
+        # News categories mapping
+        category_queries = {
+            "all": "cybersecurity OR deepfake OR digital forensics",
+            "deepfake": "deepfake OR synthetic media",
+            "cybercrime": "cybercrime OR data breach",
+            "ai": "artificial intelligence security",
+            "government": "cybersecurity policy",
+            "cases": "digital forensics cases",
+            "social": "misinformation OR fake news"
         }
         
-        response = requests.get(api_url, params=params, timeout=10)
-        data = response.json()
+        query = category_queries.get(category, "cybersecurity")
         
-        if data.get("status") == "success" and data.get("results"):
-            articles = []
-            for article in data["results"][:limit]:
-                articles.append({
-                    "id": article.get("article_id", ""),
-                    "title": article.get("title", "Untitled"),
-                    "summary": article.get("description", "No description available."),
-                    "source": article.get("source_id", "Unknown"),
-                    "publishedAt": article.get("pubDate", ""),
-                    "imageUrl": article.get("image_url"),
-                    "url": article.get("link", "#"),
-                    "category": category,
-                    "isLive": True
-                })
-            return {"success": True, "news": articles}
-        else:
-            print(f"NewsData API returned non-success: {data.get('status')}")
+        try:
+            api_url = f"https://newsdata.io/api/1/news"
+            params = {
+                "apikey": NEWSDATA_API_KEY,
+                "q": query,
+                "language": "en",
+                "size": min(limit, 10)
+            }
+            
+            response = requests.get(api_url, params=params, timeout=10)
+            data = response.json()
+            
+            if data.get("status") == "success" and data.get("results"):
+                articles = []
+                for article in data["results"][:limit]:
+                    articles.append({
+                        "id": article.get("article_id", ""),
+                        "title": article.get("title", "Untitled"),
+                        "summary": article.get("description", "No description available."),
+                        "source": article.get("source_id", "Unknown"),
+                        "publishedAt": article.get("pubDate", ""),
+                        "imageUrl": article.get("image_url"),
+                        "url": article.get("link", "#"),
+                        "category": category,
+                        "isLive": True
+                    })
+                return {"success": True, "news": articles}
+            else:
+                print(f"NewsData API returned non-success: {data.get('status')}")
+                return {"success": True, "news": mock_news}
+                
+        except Exception as e:
+            print(f"[ERROR] News API error: {str(e)}")
+            traceback.print_exc()
             return {"success": True, "news": mock_news}
             
     except Exception as e:
-        print(f"News API error: {str(e)}")
-        return {"success": True, "news": mock_news}
+        import traceback
+        print(f"[ERROR] Critical error in /api/news endpoint: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
